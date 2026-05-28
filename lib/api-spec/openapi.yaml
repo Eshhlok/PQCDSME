@@ -1,0 +1,411 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: plants
+    description: Plant management
+  - name: entries
+    description: PQCDSME data entries
+  - name: targets
+    description: Monthly targets
+  - name: insights
+    description: Chart insights
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /plants:
+    get:
+      operationId: getPlants
+      tags: [plants]
+      summary: Get all plants
+      responses:
+        "200":
+          description: List of plants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plant"
+    post:
+      operationId: createPlant
+      tags: [plants]
+      summary: Create a plant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlantInput"
+      responses:
+        "201":
+          description: Created plant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plant"
+
+  /entries:
+    get:
+      operationId: getEntries
+      tags: [entries]
+      summary: Get entries
+      parameters:
+        - name: plantId
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: section
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+    post:
+      operationId: createEntry
+      tags: [entries]
+      summary: Save a data entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEntryInput"
+      responses:
+        "201":
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+
+  /targets:
+    get:
+      operationId: getTargets
+      tags: [targets]
+      summary: Get targets
+      parameters:
+        - name: plantId
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: section
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of targets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Target"
+    post:
+      operationId: createTarget
+      tags: [targets]
+      summary: Create or update a target
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTargetInput"
+      responses:
+        "201":
+          description: Created target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+
+  /insights:
+    get:
+      operationId: getInsights
+      tags: [insights]
+      summary: Get insights
+      parameters:
+        - name: plantId
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: section
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: chartType
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of insights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Insight"
+    post:
+      operationId: createInsight
+      tags: [insights]
+      summary: Create or update an insight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInsightInput"
+      responses:
+        "201":
+          description: Created insight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Insight"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Plant:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        location:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - location
+        - createdAt
+
+    CreatePlantInput:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+      required:
+        - name
+        - location
+
+    Entry:
+      type: object
+      properties:
+        id:
+          type: number
+        plantId:
+          type: number
+        section:
+          type: string
+        entryDate:
+          type: string
+        shift:
+          type: string
+        fieldKey:
+          type: string
+        fieldValue:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - plantId
+        - section
+        - entryDate
+        - shift
+        - fieldKey
+        - fieldValue
+        - createdAt
+
+    CreateEntryInput:
+      type: object
+      properties:
+        plantId:
+          type: number
+        section:
+          type: string
+        entryDate:
+          type: string
+        shift:
+          type: string
+        fieldKey:
+          type: string
+        fieldValue:
+          type: string
+      required:
+        - plantId
+        - section
+        - entryDate
+        - shift
+        - fieldKey
+        - fieldValue
+
+    Target:
+      type: object
+      properties:
+        id:
+          type: number
+        plantId:
+          type: number
+        section:
+          type: string
+        fieldKey:
+          type: string
+        targetValue:
+          type: string
+        month:
+          type: number
+        year:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - plantId
+        - section
+        - fieldKey
+        - targetValue
+        - month
+        - year
+        - createdAt
+
+    CreateTargetInput:
+      type: object
+      properties:
+        plantId:
+          type: number
+        section:
+          type: string
+        fieldKey:
+          type: string
+        targetValue:
+          type: string
+        month:
+          type: number
+        year:
+          type: number
+      required:
+        - plantId
+        - section
+        - fieldKey
+        - targetValue
+        - month
+        - year
+
+    Insight:
+      type: object
+      properties:
+        id:
+          type: number
+        plantId:
+          type: number
+        section:
+          type: string
+        chartType:
+          type: string
+        insightText:
+          type: string
+        insightDate:
+          type: string
+        editedBy:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - plantId
+        - section
+        - chartType
+        - insightText
+        - insightDate
+        - createdAt
+
+    CreateInsightInput:
+      type: object
+      properties:
+        plantId:
+          type: number
+        section:
+          type: string
+        chartType:
+          type: string
+        insightText:
+          type: string
+        insightDate:
+          type: string
+        editedBy:
+          type: string
+      required:
+        - plantId
+        - section
+        - chartType
+        - insightText
+        - insightDate

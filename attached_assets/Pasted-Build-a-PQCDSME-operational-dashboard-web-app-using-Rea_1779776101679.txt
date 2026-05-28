@@ -1,0 +1,141 @@
+Build a PQCDSME operational dashboard web app using React (Vite) + Supabase. Here is the complete specification:
+Tech stack
+
+React + Vite frontend
+Supabase for database (I will provide the URL and anon key)
+React Router for navigation
+Chart.js + react-chartjs-2 for graphs
+No authentication — open access within the plant
+
+Project file structure
+pqcdsme-dashboard/
+├── index.html
+├── vite.config.js
+├── package.json
+├── src/
+│   ├── main.jsx
+│   ├── App.jsx
+│   ├── index.css
+│   ├── components/
+│   │   ├── Topbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   └── cards/
+│   │       ├── ProductionCard.jsx
+│   │       ├── QualityCard.jsx
+│   │       ├── CostCard.jsx
+│   │       ├── DispatchCard.jsx
+│   │       ├── SafetyCard.jsx
+│   │       ├── MoraleCard.jsx
+│   │       └── EnvironmentCard.jsx
+│   ├── pages/
+│   │   ├── Dashboard.jsx
+│   │   ├── ProductionPage.jsx
+│   │   ├── QualityPage.jsx
+│   │   ├── CostPage.jsx
+│   │   ├── DispatchPage.jsx
+│   │   ├── SafetyPage.jsx
+│   │   ├── MoralePage.jsx
+│   │   └── EnvironmentPage.jsx
+│   ├── lib/
+│   │   └── supabase.js
+│   └── styles/
+│       └── theme.css
+Design — landing page (Dashboard.jsx)
+
+Sticky topbar with hamburger icon (left), title "PQCDSME Dashboard" (center-left), plant name chip and date chip (right)
+Hamburger opens a sidebar from the left with an overlay behind it
+Sidebar lists all 7 sections: Production, Quality, Cost, Dispatch, Safety, Morale, Environment — each with its color dot. Clicking any section navigates to that section's graph page
+Main content is a responsive card grid (auto-fill, min 290px per card)
+One card per PQCDSME section, each with a colored top border accent
+
+Card structure (each of the 7 cards)
+
+Card header: colored icon box + section title + subtitle
+Input fields relevant to that section (listed below)
+A mini bar chart preview showing last 7 days of entered data (fetched from Supabase)
+A small note below the preview
+Card footer: "View graphs" link (left) + "Save" button (right)
+Save button turns green with a checkmark for 2 seconds on click, then resets
+Each card saves independently to Supabase
+
+Card color accents
+
+Production — blue (#378ADD)
+Quality — teal/green (#1D9E75)
+Cost — amber (#BA7517)
+Dispatch — purple (#7F77DD)
+Safety — red (#E24B4A)
+Morale — pink (#D4537E)
+Environment — green (#639922)
+
+Input fields per card
+
+Production: Target units (nos), Actual units (nos), Downtime (min)
+Quality: Total inspected (nos), Defects found (nos), Rejection rate % (auto-calculated)
+Cost: Budget (₹), Actual spend (₹), Savings (₹) (auto-calculated)
+Dispatch: Orders planned (nos), Dispatched (nos), OTIF % (auto-calculated)
+Safety: Near misses (nos), LTI incidents (nos), Safety observations done (nos)
+Morale: Attendance % , Suggestions given (nos), Training hours (hr)
+Environment: Energy used (kWh), Water consumed (L), Waste generated (kg)
+
+Graph pages (one per section, e.g. ProductionPage.jsx)
+
+Back button top left returning to Dashboard
+Section title with its color dot
+4 KPI summary cards at top: Today's value, Month cumulative, vs last month %, vs last year %
+4 chart sections stacked vertically, each in a white bordered card:
+
+Today — hourly bar chart, actual vs target line (dashed), bars colored by on/below target
+Cumulative — line chart, actual vs plan as two filled areas
+Month on month — bar chart, last 6 months, current month darker
+Year on year — grouped bar chart, this year vs last year, same months
+
+
+Below each chart: an insight callout (auto-generated from data, editable by supervisor)
+All charts use Chart.js via react-chartjs-2
+All data fetched from Supabase
+
+Supabase tables needed
+
+plants — id, name, location
+entries — id, plant_id, section (P/Q/C/D/S/M/E), date, shift, field_key, field_value, created_at
+targets — id, plant_id, section, field_key, target_value, month, year
+insights — id, plant_id, section, chart_type (today/cumulative/mom/yoy), insight_text, date, edited_by
+
+Routing (React Router)
+
+/ → Dashboard.jsx
+/production → ProductionPage.jsx
+/quality → QualityPage.jsx
+/cost → CostPage.jsx
+/dispatch → DispatchPage.jsx
+/safety → SafetyPage.jsx
+/morale → MoralePage.jsx
+/environment → EnvironmentPage.jsx
+
+Responsiveness
+
+Mobile and desktop both supported
+Card grid collapses to single column on mobile
+Sidebar is full-height overlay drawer on mobile
+Charts resize responsively
+
+General styling rules
+
+Clean flat design, no gradients, no drop shadows
+White card backgrounds, 0.5px borders
+Font: system sans-serif
+Topbar sticky, 52px height
+Consistent spacing: 14px card gap, 20px page padding
+Colored top border on each card (3px, per section color above)
+Buttons: outline style, hover background fill
+
+Install these packages
+bashnpm install react-router-dom @supabase/supabase-js chart.js react-chartjs-2
+Placeholder for Supabase credentials in src/lib/supabase.js
+jsimport { createClient } from '@supabase/supabase-js'
+export const supabase = createClient(
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY'
+)
+Build the complete app scaffold with all files created, all routes wired, all cards rendering with their input fields, and all graph pages rendering with dummy/hardcoded data for now. Supabase read/write can be wired after I provide credentials.

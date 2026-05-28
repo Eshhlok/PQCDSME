@@ -1,0 +1,108 @@
+
+> @workspace/pqcdsme-dashboard@0.0.0 dev /home/runner/workspace/artifacts/pqcdsme-dashboard
+> vite --config vite.config.ts --host 0.0.0.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J
+  [32m[1mVITE[22m v7.3.3[39m  [2mready in [0m[1m290[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m22075[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.24.0.2:[1m22075[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[RUNTIME_ERROR]{"type":"runtime-error","timestamp":1779776400427,"name":"Error","message":"Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.","stack":"\n    at new SupabaseClient (http://localhost/node_modules/.vite/deps/@supabase_supabase-js.js?v=3dcf0ef8:20600:21)\n\n    at /home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts:3:25","loc":{"line":3,"column":25,"file":"/home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts"},"frame":"1  |  import { createClient } from '@supabase/supabase-js'\n2  |  \n3  |  export const supabase = createClient(\n   |                          ^\n4  |    import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL',\n5  |    import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'"}
+[RUNTIME_ERROR]{"type":"runtime-error","timestamp":1779776411207,"name":"Error","message":"Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.","stack":"\n    at new SupabaseClient (https://e49a52d6-03c0-45c2-a7f3-8aff72be3337-00-1pakmlhxyti6b.worf.replit.dev/node_modules/.vite/deps/@supabase_supabase-js.js?v=3dcf0ef8:20600:21)\n\n    at /home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts:3:25","loc":{"line":3,"column":25,"file":"/home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts"},"frame":"1  |  import { createClient } from '@supabase/supabase-js'\n2  |  \n3  |  export const supabase = createClient(\n   |                          ^\n4  |    import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL',\n5  |    import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'"}
+[RUNTIME_ERROR]{"type":"runtime-error","timestamp":1779776415500,"name":"Error","message":"Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.","stack":"\n    at new SupabaseClient (http://localhost/node_modules/.vite/deps/@supabase_supabase-js.js?v=3dcf0ef8:20600:21)\n\n    at /home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts:3:25","loc":{"line":3,"column":25,"file":"/home/runner/workspace/artifacts/pqcdsme-dashboard/src/lib/supabase.ts"},"frame":"1  |  import { createClient } from '@supabase/supabase-js'\n2  |  \n3  |  export const supabase = createClient(\n   |                          ^\n4  |    import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL',\n5  |    import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:20:27 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Dashboard.tsx, /src/components/GraphPageLayout.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:20:53 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:20:54 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/GraphPageLayout.tsx[22m
