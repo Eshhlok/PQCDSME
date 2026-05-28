@@ -6,7 +6,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
-  console.log("API request token:", token ? token.substring(0, 20) + "..." : "NONE");
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,

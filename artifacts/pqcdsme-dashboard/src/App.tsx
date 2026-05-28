@@ -14,19 +14,14 @@ import DispatchPage from "./pages/DispatchPage";
 import SafetyPage from "./pages/SafetyPage";
 import MoralePage from "./pages/MoralePage";
 import EnvironmentPage from "./pages/EnvironmentPage";
+import TargetsPage from "./pages/TargetPage";
 import { AcceptInvitePage } from "./pages/AcceptInvite";
 
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [forceReady, setForceReady] = useState(false);
   const { session, loading } = useAuth();
 
-  useEffect(() => {
-    const t = setTimeout(() => setForceReady(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (loading && !forceReady) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500 text-sm">Loading...</p>
@@ -57,6 +52,7 @@ function AppShell() {
                 <Route path="/safety" component={SafetyPage} />
                 <Route path="/morale" component={MoralePage} />
                 <Route path="/environment" component={EnvironmentPage} />
+                <Route path="/targets" component={TargetsPage} />
                 <Route>
                   <div className="flex flex-col items-center justify-center pt-20">
                     <h1 className="text-2xl font-bold text-gray-900">404 - Not Found</h1>
