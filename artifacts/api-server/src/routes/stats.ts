@@ -17,7 +17,7 @@ router.get("/stats/today", async (req, res) => {
 
     const rows = await db
       .select({
-        hour: sql<string>`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`,
+        hour: sql<string>`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24:MI')`,
         value: sql<number>`sum(cast(field_value as numeric))`,
       })
       .from(entriesTable)

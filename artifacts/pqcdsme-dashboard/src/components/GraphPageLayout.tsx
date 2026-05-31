@@ -43,7 +43,7 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
         section,
         chartType,
         insightText: text,
-        insightDate: new Date().toISOString().split('T')[0],
+        insightDate: new Date().toLocaleDateString('en-CA'),
       });
     } catch (err) {
       console.error('Failed to save insight:', err);
@@ -57,7 +57,10 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
     return (
       <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded-md group relative">
         <p className="text-sm text-gray-700 pr-8">{text}</p>
-        <button onClick={() => setEditing(true)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => setEditing(true)}
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
           <Edit2 className="w-4 h-4" />
         </button>
       </div>
@@ -66,11 +69,20 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      <textarea value={text} onChange={e => setText(e.target.value)}
-        className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+      />
       <div className="flex justify-end gap-2">
-        <button onClick={() => setEditing(false)} className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-        <button onClick={handleSave} disabled={saving} className="px-3 py-1 text-sm bg-gray-900 text-white rounded-md flex items-center gap-1">
+        <button onClick={() => setEditing(false)} className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700">
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-3 py-1 text-sm bg-gray-900 text-white rounded-md flex items-center gap-1"
+        >
           {saving ? 'Saving...' : <><Check className="w-3 h-3" /> Save</>}
         </button>
       </div>
@@ -78,32 +90,44 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
   );
 }
 
-export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps) {
+export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: GraphPageLayoutProps) {
   const section = title.toLowerCase();
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const [todayData, setTodayData] = useState<{ hour: string; value: number }[]>([]);
+  const [todayData, setTodayData]           = useState<{ hour: string; value: number }[]>([]);
   const [cumulativeData, setCumulativeData] = useState<{ date: string; value: number }[]>([]);
-  const [momData, setMomData] = useState<{ month: string; monthNum: string; value: number }[]>([]);
-  const [yoyData, setYoyData] = useState<{ year: number; month: string; monthNum: number; value: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [momData, setMomData]               = useState<{ month: string; monthNum: string; value: number }[]>([]);
+  const [yoyData, setYoyData]               = useState<{ year: number; month: string; monthNum: number; value: number }[]>([]);
+  const [targetValue, setTargetValue]       = useState<number | null>(null);
+  const [loading, setLoading]               = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [today, cumulative, mom, yoy] = await Promise.all([
+        const [today, cumulative, mom, yoy, targets] = await Promise.all([
           api.getStatsToday(PLANT_ID, section, fieldKey),
           api.getStatsCumulative(PLANT_ID, section, fieldKey, month, year),
           api.getStatsMoM(PLANT_ID, section, fieldKey),
           api.getStatsYoY(PLANT_ID, section, fieldKey),
+          targetFieldKey
+            ? api.getTargets({ plantId: PLANT_ID, section, month, year })
+            : Promise.resolve([]),
         ]);
+
         setTodayData(today);
         setCumulativeData(cumulative);
         setMomData(mom);
         setYoyData(yoy);
+
+        if (targetFieldKey && targets.length > 0) {
+          const match = targets.find((t: any) => t.fieldKey === targetFieldKey);
+          setTargetValue(match ? Number(match.targetValue) : null);
+        } else {
+          setTargetValue(null);
+        }
       } catch (err) {
         console.error('Failed to fetch stats:', err);
       } finally {
@@ -111,10 +135,10 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
       }
     };
     fetchAll();
-  }, [section, fieldKey]);
+  }, [section, fieldKey, targetFieldKey]);
 
   // KPI calculations
-  const todayTotal = todayData.reduce((s, r) => s + Number(r.value), 0);
+  const todayTotal      = todayData.reduce((s, r) => s + Number(r.value), 0);
   const cumulativeTotal = cumulativeData.length ? cumulativeData[cumulativeData.length - 1].value : 0;
 
   const thisMonthMoM = momData.find(r => r.monthNum === `${year}-${String(month).padStart(2, '0')}`);
@@ -126,8 +150,8 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
     ? (((Number(thisMonthMoM.value) - Number(lastMonthMoM.value)) / Number(lastMonthMoM.value)) * 100).toFixed(1)
     : 'N/A';
 
-  const thisYearYoY = yoyData.filter(r => r.year === year);
-  const lastYearYoY = yoyData.filter(r => r.year === year - 1);
+  const thisYearYoY   = yoyData.filter(r => Number(r.year) === year);
+  const lastYearYoY   = yoyData.filter(r => Number(r.year) === year - 1);
   const thisYearTotal = thisYearYoY.reduce((s, r) => s + Number(r.value), 0);
   const lastYearTotal = lastYearYoY.reduce((s, r) => s + Number(r.value), 0);
   const yoyPct = lastYearTotal > 0
@@ -136,7 +160,7 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
 
   // Chart data
   const todayChartData = {
-    labels: todayData.map(r => `${r.hour}:00`),
+    labels: todayData.map(r => r.hour),
     datasets: [{
       label: 'Actual',
       data: todayData.map(r => Number(r.value)),
@@ -147,15 +171,28 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
 
   const cumulativeChartData = {
     labels: cumulativeData.map(r => r.date.slice(5)),
-    datasets: [{
-      label: 'Cumulative',
-      data: cumulativeData.map(r => r.value),
-      borderColor: color,
-      backgroundColor: `${color}22`,
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-    }]
+    datasets: [
+      {
+        label: 'Cumulative',
+        data: cumulativeData.map(r => r.value),
+        borderColor: color,
+        backgroundColor: `${color}22`,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      ...(targetValue !== null ? [{
+        label: 'Target',
+        data: cumulativeData.map(() => targetValue),
+        borderColor: '#EF4444',
+        backgroundColor: 'transparent',
+        borderDash: [6, 3],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      }] : []),
+    ]
   };
 
   const momChartData = {
@@ -163,34 +200,26 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
     datasets: [{
       label: 'Monthly Total',
       data: momData.map(r => Number(r.value)),
-      backgroundColor: momData.map((r, i) => i === momData.length - 1 ? color : `${color}66`),
+      backgroundColor: momData.map((_, i) => i === momData.length - 1 ? color : `${color}66`),
       borderRadius: 4,
     }]
   };
 
-  const allMonths = [...new Set(yoyData.map(r => r.month))];
+  // YoY — one bar per year, full year total
+  const years = [...new Set(yoyData.map(r => Number(r.year)))].sort();
+
   const yoyChartData = {
-    labels: allMonths,
-    datasets: [
-      {
-        label: String(year - 1),
-        data: allMonths.map(m => {
-          const found = yoyData.find(r => r.month === m && r.year === year - 1);
-          return found ? Number(found.value) : 0;
-        }),
-        backgroundColor: `${color}55`,
-        borderRadius: 4,
-      },
-      {
-        label: String(year),
-        data: allMonths.map(m => {
-          const found = yoyData.find(r => r.month === m && r.year === year);
-          return found ? Number(found.value) : 0;
-        }),
-        backgroundColor: color,
-        borderRadius: 4,
-      }
-    ]
+    labels: years.map(String),
+    datasets: [{
+      label: 'Annual Total',
+      data: years.map(y =>
+        yoyData
+          .filter(r => Number(r.year) === y)
+          .reduce((sum, r) => sum + Number(r.value), 0)
+      ),
+      backgroundColor: years.map((_, i) => i === years.length - 1 ? color : `${color}55`),
+      borderRadius: 4,
+    }]
   };
 
   const commonOptions = {
@@ -200,7 +229,9 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading charts...</div>
+    <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+      Loading charts...
+    </div>
   );
 
   return (
@@ -215,12 +246,13 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Today", value: todayTotal.toLocaleString() },
-          { label: "Month Cum.", value: cumulativeTotal.toLocaleString() },
+          { label: "Today",         value: todayTotal.toLocaleString() },
+          { label: "Month Cum.",    value: cumulativeTotal.toLocaleString() },
           { label: "vs Last Month", value: momPct !== 'N/A' ? `${Number(momPct) >= 0 ? '+' : ''}${momPct}%` : 'N/A' },
-          { label: "vs Last Year", value: yoyPct !== 'N/A' ? `${Number(yoyPct) >= 0 ? '+' : ''}${yoyPct}%` : 'N/A' },
+          { label: "vs Last Year",  value: yoyPct !== 'N/A' ? `${Number(yoyPct) >= 0 ? '+' : ''}${yoyPct}%` : 'N/A' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 border border-gray-200 rounded-lg">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{stat.label}</p>
@@ -230,6 +262,7 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
       </div>
 
       <div className="space-y-6">
+        {/* Today */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Today's Performance</h3>
           {todayData.length === 0
@@ -239,8 +272,16 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
           <InsightBox section={section} chartType="today" defaultText="Performance is steady across shifts today." />
         </div>
 
+        {/* Cumulative */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Month Cumulative</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">
+            Month Cumulative
+            {targetValue !== null && (
+              <span className="ml-2 text-xs font-normal text-red-500 normal-case">
+                — Target: {targetValue.toLocaleString()}
+              </span>
+            )}
+          </h3>
           {cumulativeData.length === 0
             ? <p className="text-sm text-gray-400 text-center py-8">No data for this month yet</p>
             : <div className="h-[250px]"><Line data={cumulativeChartData} options={commonOptions} /></div>
@@ -248,6 +289,7 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
           <InsightBox section={section} chartType="cumulative" defaultText="Tracking cumulative progress for the month." />
         </div>
 
+        {/* MoM */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Month on Month Trend</h3>
           {momData.length === 0
@@ -257,6 +299,7 @@ export function GraphPageLayout({ title, color, fieldKey }: GraphPageLayoutProps
           <InsightBox section={section} chartType="mom" defaultText="Monthly trend comparison." />
         </div>
 
+        {/* YoY */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Year on Year Comparison</h3>
           {yoyData.length === 0
