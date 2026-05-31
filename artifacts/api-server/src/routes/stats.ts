@@ -5,16 +5,20 @@ import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-// TODAY — entries for today grouped by hour
+// TODAY — entries for today grouped by hour (IST)
 router.get("/stats/today", async (req, res) => {
   try {
     const { plantId, section, fieldKey } = req.query;
-    const today = new Date().toISOString().split('T')[0];
+
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(now.getTime() + istOffset);
+    const today = istDate.toISOString().split('T')[0];
 
     const rows = await db
       .select({
-        hour: sql<string>`to_char(${entriesTable.createdAt}, 'HH24')`,
-        value: sql<number>`sum(cast(${entriesTable.fieldValue} as numeric))`,
+        hour: sql<string>`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`,
+        value: sql<number>`sum(cast(field_value as numeric))`,
       })
       .from(entriesTable)
       .where(
@@ -25,8 +29,8 @@ router.get("/stats/today", async (req, res) => {
           eq(entriesTable.entryDate, today),
         )
       )
-      .groupBy(sql`to_char(${entriesTable.createdAt}, 'HH24')`)
-      .orderBy(sql`to_char(${entriesTable.createdAt}, 'HH24')`);
+      .groupBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`)
+      .orderBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`);
 
     res.json(rows);
   } catch (err: any) {
@@ -80,10 +84,13 @@ router.get("/stats/mom", async (req, res) => {
   try {
     const { plantId, section, fieldKey } = req.query;
 
-    const d = new Date();
-    d.setMonth(d.getMonth() - 5);
-    d.setDate(1);
-    const startDate = d.toISOString().split('T')[0];
+    // Get start date in IST
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    istNow.setMonth(istNow.getMonth() - 5);
+    istNow.setDate(1);
+    const startDate = istNow.toISOString().split('T')[0];
 
     const rows = await db
       .select({

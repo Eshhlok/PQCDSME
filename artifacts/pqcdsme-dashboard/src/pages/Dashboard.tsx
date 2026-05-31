@@ -113,7 +113,7 @@ export default function Dashboard() {
   const envChart  = useLast7Days('environment','energy',     '#639922');
 
   const saveToDb = async (section: string, data: Record<string, string | number>) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     await Promise.all(
       Object.entries(data).map(([key, value]) =>
         api.createEntry({
