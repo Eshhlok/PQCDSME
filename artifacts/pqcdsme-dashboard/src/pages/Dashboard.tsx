@@ -20,7 +20,7 @@ function getLast7Days() {
 }
 
 // Hook — fetches last 7 days of a single field_key for a section
-function useLast7Days(section: string, fieldKey: string, color: string) {
+function useLast7Days(section: string, fieldKey: string, color: string, refreshKey: number) {
   const [chartData, setChartData] = useState<any>({
     labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
     datasets: [{ data: [0, 0, 0, 0, 0, 0, 0], backgroundColor: color, borderRadius: 2 }]
@@ -33,15 +33,14 @@ function useLast7Days(section: string, fieldKey: string, color: string) {
 
     api.getEntries({ plantId: PLANT_ID, section, startDate, endDate })
       .then(entries => {
-        // Filter to this fieldKey only, sum by date (multiple shifts)
         const sumByDate: Record<string, number> = {};
         days.forEach(d => { sumByDate[d.date] = 0; });
 
         entries
-          .filter(e => e.field_key === fieldKey)
+          .filter(e => e.fieldKey === fieldKey)        // ✅ was e.field_key
           .forEach(e => {
-            if (sumByDate[e.entry_date] !== undefined) {
-              sumByDate[e.entry_date] += Number(e.field_value) || 0;
+            if (sumByDate[e.entryDate] !== undefined) { // ✅ was e.entry_date
+              sumByDate[e.entryDate] += Number(e.fieldValue) || 0; // ✅ was e.field_value
             }
           });
 
@@ -54,12 +53,11 @@ function useLast7Days(section: string, fieldKey: string, color: string) {
           }]
         });
       })
-      .catch(() => {}); // keep dummy zeros on error
-  }, [section, fieldKey, color]);
+      .catch(() => {});
+  }, [section, fieldKey, color,refreshKey]);
 
   return chartData;
 }
-
 export default function Dashboard() {
   // Production State
   const [prodTarget, setProdTarget]   = useState("");
@@ -102,16 +100,18 @@ export default function Dashboard() {
 
   const { profile } = useAuth();
   const isViewer = profile?.role === "viewer";
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Real chart data — one primary KPI per section
-  const prodChart = useLast7Days('production', 'actual',     '#378ADD');
-  const qualChart = useLast7Days('quality',    'defects',    '#1D9E75');
-  const costChart = useLast7Days('cost',       'actual',     '#BA7517');
-  const dispChart = useLast7Days('dispatch',   'dispatched', '#7F77DD');
-  const safChart  = useLast7Days('safety',     'near_miss',  '#E24B4A');
-  const morChart  = useLast7Days('morale',     'attendance', '#D4537E');
-  const envChart  = useLast7Days('environment','energy',     '#639922');
+  const prodChart = useLast7Days('production', 'actual',     '#378ADD', refreshKey);
+  const qualChart = useLast7Days('quality',    'defects',    '#1D9E75', refreshKey);
+  const costChart = useLast7Days('cost',       'actual',     '#BA7517', refreshKey);
+  const dispChart = useLast7Days('dispatch',   'dispatched', '#7F77DD', refreshKey);
+  const safChart  = useLast7Days('safety',     'near_miss',  '#E24B4A', refreshKey);
+  const morChart  = useLast7Days('morale',     'attendance', '#D4537E', refreshKey);
+  const envChart  = useLast7Days('environment','energy',     '#639922', refreshKey);
 
+  
   const saveToDb = async (section: string, data: Record<string, string | number>) => {
     const today = new Date().toLocaleDateString('en-CA');
     await Promise.all(
@@ -126,6 +126,7 @@ export default function Dashboard() {
         })
       )
     );
+    setRefreshKey(k => k + 1);
   };
 
   return (

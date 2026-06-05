@@ -29,8 +29,8 @@ router.get("/stats/today", async (req, res) => {
           eq(entriesTable.entryDate, today),
         )
       )
-      .groupBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`)
-      .orderBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24":00"')`);
+      .groupBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24:MI')`)
+      .orderBy(sql`to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'HH24:MI')`);
 
     res.json(rows);
   } catch (err: any) {
