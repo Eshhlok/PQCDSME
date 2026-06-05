@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 
 const PLANT_ID = 1;
 
-// Generates last 7 date strings and day labels
 function getLast7Days() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -19,11 +18,10 @@ function getLast7Days() {
   return days;
 }
 
-// Hook — fetches last 7 days of a single field_key for a section
 function useLast7Days(section: string, fieldKey: string, color: string, refreshKey: number) {
   const [chartData, setChartData] = useState<any>({
     labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
-    datasets: [{ data: [0, 0, 0, 0, 0, 0, 0], backgroundColor: color, borderRadius: 2 }]
+    datasets: [{ data: [0, 0, 0, 0, 0, 0, 0], backgroundColor: color, borderRadius: 3 }]
   });
 
   useEffect(() => {
@@ -37,10 +35,10 @@ function useLast7Days(section: string, fieldKey: string, color: string, refreshK
         days.forEach(d => { sumByDate[d.date] = 0; });
 
         entries
-          .filter(e => e.fieldKey === fieldKey)        // ✅ was e.field_key
+          .filter(e => e.fieldKey === fieldKey)
           .forEach(e => {
-            if (sumByDate[e.entryDate] !== undefined) { // ✅ was e.entry_date
-              sumByDate[e.entryDate] += Number(e.fieldValue) || 0; // ✅ was e.field_value
+            if (sumByDate[e.entryDate] !== undefined) {
+              sumByDate[e.entryDate] += Number(e.fieldValue) || 0;
             }
           });
 
@@ -49,60 +47,63 @@ function useLast7Days(section: string, fieldKey: string, color: string, refreshK
           datasets: [{
             data: days.map(d => sumByDate[d.date]),
             backgroundColor: color,
-            borderRadius: 2,
+            borderRadius: 3,
           }]
         });
       })
       .catch(() => {});
-  }, [section, fieldKey, color,refreshKey]);
+  }, [section, fieldKey, color, refreshKey]);
 
   return chartData;
 }
+
 export default function Dashboard() {
-  // Production State
-  const [prodTarget, setProdTarget]   = useState("");
-  const [prodActual, setProdActual]   = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [globalSaving, setGlobalSaving] = useState(false);
+
+  // Production
+  const [prodTarget, setProdTarget]     = useState("");
+  const [prodActual, setProdActual]     = useState("");
   const [prodDowntime, setProdDowntime] = useState("");
 
-  // Quality State
+  // Quality
   const [qualInspected, setQualInspected] = useState("");
   const [qualDefects, setQualDefects]     = useState("");
   const qualRejectionRate = (Number(qualInspected) > 0 && Number(qualDefects) >= 0)
     ? ((Number(qualDefects) / Number(qualInspected)) * 100).toFixed(2)
     : "0.00";
 
-  // Cost State
+  // Cost
   const [costBudget, setCostBudget] = useState("");
   const [costActual, setCostActual] = useState("");
   const costSavings = (Number(costBudget) || 0) - (Number(costActual) || 0);
 
-  // Dispatch State
+  // Dispatch
   const [dispPlanned, setDispPlanned] = useState("");
   const [dispActual, setDispActual]   = useState("");
   const dispOtif = (Number(dispPlanned) > 0 && Number(dispActual) >= 0)
     ? ((Number(dispActual) / Number(dispPlanned)) * 100).toFixed(1)
     : "0.0";
 
-  // Safety State
+  // Safety
   const [safNearMiss, setSafNearMiss] = useState("");
   const [safLti, setSafLti]           = useState("");
   const [safObs, setSafObs]           = useState("");
 
-  // Morale State
-  const [morAtt, setMorAtt]   = useState("");
-  const [morSugg, setMorSugg] = useState("");
+  // Morale
+  const [morAtt, setMorAtt]     = useState("");
+  const [morSugg, setMorSugg]   = useState("");
   const [morTrain, setMorTrain] = useState("");
 
-  // Environment State
+  // Environment
   const [envEnergy, setEnvEnergy] = useState("");
   const [envWater, setEnvWater]   = useState("");
   const [envWaste, setEnvWaste]   = useState("");
 
   const { profile } = useAuth();
   const isViewer = profile?.role === "viewer";
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Real chart data — one primary KPI per section
+  // Charts — all re-fetch when refreshKey bumps
   const prodChart = useLast7Days('production', 'actual',     '#378ADD', refreshKey);
   const qualChart = useLast7Days('quality',    'defects',    '#1D9E75', refreshKey);
   const costChart = useLast7Days('cost',       'actual',     '#BA7517', refreshKey);
@@ -111,33 +112,50 @@ export default function Dashboard() {
   const morChart  = useLast7Days('morale',     'attendance', '#D4537E', refreshKey);
   const envChart  = useLast7Days('environment','energy',     '#639922', refreshKey);
 
-  
   const saveToDb = async (section: string, data: Record<string, string | number>) => {
+    setGlobalSaving(true);
     const today = new Date().toLocaleDateString('en-CA');
-    await Promise.all(
-      Object.entries(data).map(([key, value]) =>
-        api.createEntry({
-          plantId: PLANT_ID,
-          section,
-          entryDate: today,
-          shift: 'morning',
-          fieldKey: key,
-          fieldValue: String(value),
-        })
-      )
-    );
-    setRefreshKey(k => k + 1);
+    try {
+      await Promise.all(
+        Object.entries(data).map(([key, value]) =>
+          api.createEntry({
+            plantId: PLANT_ID,
+            section,
+            entryDate: today,
+            shift: 'morning',
+            fieldKey: key,
+            fieldValue: String(value),
+          })
+        )
+      );
+      setRefreshKey(k => k + 1);
+    } finally {
+      setGlobalSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    // Global cursor flips to 'wait' while any save is in flight
+    <div className="max-w-[1600px] mx-auto" style={{ cursor: globalSaving ? 'wait' : 'default' }}>
+
+      {/* ── Page header ── */}
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Plant Status</h2>
-          <p className="text-sm text-gray-500">Record daily operations metrics</p>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Plant Status</h2>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
         </div>
+
+        {globalSaving && (
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-1.5 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping inline-block" />
+            Saving data…
+          </div>
+        )}
       </div>
 
+      {/* ── Section cards grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
 
         {/* PRODUCTION */}
@@ -148,16 +166,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Target units (nos)</label>
-            <input disabled={isViewer} type="number" value={prodTarget} onChange={e => setProdTarget(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Target units (nos)</label>
+            <input disabled={isViewer} type="number" value={prodTarget} onChange={e => setProdTarget(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Actual units (nos)</label>
-            <input disabled={isViewer} type="number" value={prodActual} onChange={e => setProdActual(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Actual units (nos)</label>
+            <input disabled={isViewer} type="number" value={prodActual} onChange={e => setProdActual(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Downtime (min)</label>
-            <input disabled={isViewer} type="number" value={prodDowntime} onChange={e => setProdDowntime(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Downtime (min)</label>
+            <input disabled={isViewer} type="number" value={prodDowntime} onChange={e => setProdDowntime(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -169,16 +190,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Total inspected (nos)</label>
-            <input disabled={isViewer} type="number" value={qualInspected} onChange={e => setQualInspected(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-teal-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Total inspected (nos)</label>
+            <input disabled={isViewer} type="number" value={qualInspected} onChange={e => setQualInspected(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Defects found (nos)</label>
-            <input disabled={isViewer} type="number" value={qualDefects} onChange={e => setQualDefects(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-teal-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Defects found (nos)</label>
+            <input disabled={isViewer} type="number" value={qualDefects} onChange={e => setQualDefects(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Rejection rate (%)</label>
-            <input disabled type="text" readOnly value={qualRejectionRate} className="border border-gray-200 bg-gray-50 text-gray-500 rounded px-2 py-1 text-sm cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Rejection rate (%)</label>
+            <input disabled type="text" readOnly value={qualRejectionRate}
+              className="border border-gray-200 bg-gray-50 text-gray-400 rounded-sm px-2 py-1.5 text-sm cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -190,16 +214,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Budget (₹)</label>
-            <input disabled={isViewer} type="number" value={costBudget} onChange={e => setCostBudget(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Budget (₹)</label>
+            <input disabled={isViewer} type="number" value={costBudget} onChange={e => setCostBudget(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Actual spend (₹)</label>
-            <input disabled={isViewer} type="number" value={costActual} onChange={e => setCostActual(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Actual spend (₹)</label>
+            <input disabled={isViewer} type="number" value={costActual} onChange={e => setCostActual(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Savings (₹)</label>
-            <input disabled type="text" readOnly value={costSavings} className="border border-gray-200 bg-gray-50 text-gray-500 rounded px-2 py-1 text-sm cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Savings (₹)</label>
+            <input disabled type="text" readOnly value={costSavings}
+              className="border border-gray-200 bg-gray-50 text-gray-400 rounded-sm px-2 py-1.5 text-sm cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -211,16 +238,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Orders planned (nos)</label>
-            <input disabled={isViewer} type="number" value={dispPlanned} onChange={e => setDispPlanned(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Orders planned (nos)</label>
+            <input disabled={isViewer} type="number" value={dispPlanned} onChange={e => setDispPlanned(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Dispatched (nos)</label>
-            <input disabled={isViewer} type="number" value={dispActual} onChange={e => setDispActual(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Dispatched (nos)</label>
+            <input disabled={isViewer} type="number" value={dispActual} onChange={e => setDispActual(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">OTIF (%)</label>
-            <input disabled type="text" readOnly value={dispOtif} className="border border-gray-200 bg-gray-50 text-gray-500 rounded px-2 py-1 text-sm cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">OTIF (%)</label>
+            <input disabled type="text" readOnly value={dispOtif}
+              className="border border-gray-200 bg-gray-50 text-gray-400 rounded-sm px-2 py-1.5 text-sm cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -232,16 +262,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Near misses (nos)</label>
-            <input disabled={isViewer} type="number" value={safNearMiss} onChange={e => setSafNearMiss(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-red-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Near misses (nos)</label>
+            <input disabled={isViewer} type="number" value={safNearMiss} onChange={e => setSafNearMiss(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">LTI incidents (nos)</label>
-            <input disabled={isViewer} type="number" value={safLti} onChange={e => setSafLti(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-red-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">LTI incidents (nos)</label>
+            <input disabled={isViewer} type="number" value={safLti} onChange={e => setSafLti(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Observations (nos)</label>
-            <input disabled={isViewer} type="number" value={safObs} onChange={e => setSafObs(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-red-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Observations (nos)</label>
+            <input disabled={isViewer} type="number" value={safObs} onChange={e => setSafObs(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -253,16 +286,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Attendance (%)</label>
-            <input disabled={isViewer} type="number" value={morAtt} onChange={e => setMorAtt(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-pink-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Attendance (%)</label>
+            <input disabled={isViewer} type="number" value={morAtt} onChange={e => setMorAtt(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Suggestions given (nos)</label>
-            <input disabled={isViewer} type="number" value={morSugg} onChange={e => setMorSugg(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-pink-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Suggestions given (nos)</label>
+            <input disabled={isViewer} type="number" value={morSugg} onChange={e => setMorSugg(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Training hours (hr)</label>
-            <input disabled={isViewer} type="number" value={morTrain} onChange={e => setMorTrain(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-pink-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Training hours (hr)</label>
+            <input disabled={isViewer} type="number" value={morTrain} onChange={e => setMorTrain(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
         </SectionCard>
 
@@ -274,16 +310,19 @@ export default function Dashboard() {
           readOnly={isViewer}
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Energy used (kWh)</label>
-            <input disabled={isViewer} type="number" value={envEnergy} onChange={e => setEnvEnergy(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-green-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Energy used (kWh)</label>
+            <input disabled={isViewer} type="number" value={envEnergy} onChange={e => setEnvEnergy(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Water consumed (L)</label>
-            <input disabled={isViewer} type="number" value={envWater} onChange={e => setEnvWater(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-green-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Water consumed (L)</label>
+            <input disabled={isViewer} type="number" value={envWater} onChange={e => setEnvWater(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Waste generated (kg)</label>
-            <input disabled={isViewer} type="number" value={envWaste} onChange={e => setEnvWaste(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-green-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+            <label className="text-xs font-medium text-gray-500">Waste generated (kg)</label>
+            <input disabled={isViewer} type="number" value={envWaste} onChange={e => setEnvWaste(e.target.value)}
+              className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
           </div>
         </SectionCard>
 
