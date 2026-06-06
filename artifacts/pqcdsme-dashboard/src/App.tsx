@@ -42,7 +42,7 @@ function AppShell() {
           <div className="min-h-screen bg-gray-50 flex flex-col w-full">
             <Topbar onMenuClick={() => setSidebarOpen(true)} />
             <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            <main className="flex-1 p-5 w-full">
+            <main className="flex-1 p-4 w-full">
               <Switch>
                 <Route path="/" component={Dashboard} />
                 <Route path="/production" component={ProductionPage} />
