@@ -58,8 +58,9 @@ export const api = {
     const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey, month: String(month), year: String(year) });
     return request<{ date: string; value: number }[]>(`/stats/cumulative?${query}`);
   },
-  getStatsMoM: (plantId: number, section: string, fieldKey: string) => {
-    const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey });
+  getStatsMoM: (plantId: number, section: string, fieldKey: string, year?: number) => {
+    const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey, });
+    if (year !== undefined) query.set('year', String(year));
     return request<{ month: string; monthNum: string; value: number }[]>(`/stats/mom?${query}`);
   },
   getStatsYoY: (plantId: number, section: string, fieldKey: string) => {

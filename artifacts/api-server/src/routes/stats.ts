@@ -39,7 +39,7 @@ router.get("/stats/today", async (req, res) => {
   }
 });
 
-// CUMULATIVE — running total for current month day by day
+// CUMULATIVE — running total for a given month day by day
 router.get("/stats/cumulative", async (req, res) => {
   try {
     const { plantId, section, fieldKey, month, year } = req.query;
@@ -79,18 +79,37 @@ router.get("/stats/cumulative", async (req, res) => {
   }
 });
 
-// MONTH ON MONTH — total per month for last 6 months
+// MONTH ON MONTH — total per month
+// If `year` param provided: returns all months of that specific year
+// Otherwise: returns last 6 months from today
 router.get("/stats/mom", async (req, res) => {
   try {
-    const { plantId, section, fieldKey } = req.query;
+    const { plantId, section, fieldKey, year } = req.query;
 
-    // Get start date in IST
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istNow = new Date(now.getTime() + istOffset);
-    istNow.setMonth(istNow.getMonth() - 5);
-    istNow.setDate(1);
-    const startDate = istNow.toISOString().split('T')[0];
+    let startDate: string;
+    let endDate: string | undefined;
+
+    if (year) {
+      // Drill-down: show all months for the specified year
+      startDate = `${year}-01-01`;
+      endDate   = `${year}-12-31`;
+    } else {
+      // Default: last 6 months from now (IST)
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istNow = new Date(now.getTime() + istOffset);
+      istNow.setMonth(istNow.getMonth() - 5);
+      istNow.setDate(1);
+      startDate = istNow.toISOString().split('T')[0];
+    }
+
+    const conditions = [
+      eq(entriesTable.plantId, Number(plantId)),
+      eq(entriesTable.section, String(section)),
+      eq(entriesTable.fieldKey, String(fieldKey)),
+      gte(entriesTable.entryDate, startDate),
+      ...(endDate ? [lte(entriesTable.entryDate, endDate)] : []),
+    ];
 
     const rows = await db
       .select({
@@ -99,14 +118,7 @@ router.get("/stats/mom", async (req, res) => {
         value: sql<number>`sum(cast(${entriesTable.fieldValue} as numeric))`,
       })
       .from(entriesTable)
-      .where(
-        and(
-          eq(entriesTable.plantId, Number(plantId)),
-          eq(entriesTable.section, String(section)),
-          eq(entriesTable.fieldKey, String(fieldKey)),
-          gte(entriesTable.entryDate, startDate),
-        )
-      )
+      .where(and(...conditions))
       .groupBy(
         sql`to_char(${entriesTable.entryDate}::date, 'Mon YYYY')`,
         sql`to_char(${entriesTable.entryDate}::date, 'YYYY-MM')`
@@ -120,7 +132,7 @@ router.get("/stats/mom", async (req, res) => {
   }
 });
 
-// YEAR ON YEAR — same months this year vs last year
+// YEAR ON YEAR — annual totals for all years in data
 router.get("/stats/yoy", async (req, res) => {
   try {
     const { plantId, section, fieldKey } = req.query;
