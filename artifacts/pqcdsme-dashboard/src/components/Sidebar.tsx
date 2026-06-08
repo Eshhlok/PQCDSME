@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { X, LayoutDashboard, Target, ChevronRight } from "lucide-react";
+import { X, LayoutDashboard, Target, ChevronRight, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../lib/api";
+
+const PLANT_ID = 1;
 
 export const sections = [
   { id: "production",  label: "Production",  color: "#378ADD", path: "/production"  },
@@ -21,11 +24,22 @@ interface SidebarProps {
 export function Sidebar({ open, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { profile } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const canSeeAlerts = profile?.role === "admin" || profile?.role === "operator";
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  // Fetch unread count for the alerts badge in sidebar
+  useEffect(() => {
+    if (!canSeeAlerts) return;
+    api.getAlerts(PLANT_ID)
+      .then((alerts: any[]) => setUnreadCount(alerts.filter(a => !a.read).length))
+      .catch(() => {});
+  }, [canSeeAlerts, open]); // re-fetch when sidebar opens
 
   const isActive = (path: string) => location === path;
 
@@ -102,20 +116,43 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
           </div>
 
-          {/* Admin */}
-          {profile?.role === "admin" && (
+          {/* Admin + Operator section */}
+          {canSeeAlerts && (
             <div className="border-t border-gray-100 pt-4">
               <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 8, marginBottom: 6 }}>
-                Admin
+                {profile?.role === "admin" ? "Admin" : "Tools"}
               </p>
+
+              {/* Alerts — admin + operator */}
               <NavItem
-                href="/targets"
-                active={isActive("/targets")}
+                href="/alerts"
+                active={isActive("/alerts")}
                 onClick={onClose}
-                icon={<Target className="w-4 h-4" />}
-                label="Set Targets"
-                accent="#BA7517"
+                icon={
+                  <div className="relative">
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                }
+                label="Alerts"
+                accent="#EF4444"
               />
+
+              {/* Set Targets — admin only */}
+              {profile?.role === "admin" && (
+                <NavItem
+                  href="/targets"
+                  active={isActive("/targets")}
+                  onClick={onClose}
+                  icon={<Target className="w-4 h-4" />}
+                  label="Set Targets"
+                  accent="#BA7517"
+                />
+              )}
             </div>
           )}
         </div>
@@ -187,14 +224,11 @@ function NavItem({ href, active, onClick, icon, label, accent }: NavItemProps) {
         borderLeft: `3px solid ${active ? accent : "transparent"}`,
       }}
     >
-      {/* Icon */}
       <span style={{ color: active ? accent : "#9ca3af", transition: "color 0.15s", display: "flex", alignItems: "center" }}>
         {icon}
       </span>
-
-      {/* Label */}
       <span style={{
-        fontSize: 15,           // ← was 13
+        fontSize: 15,
         fontWeight: active ? 600 : 400,
         color: active ? "#111827" : hovered ? "#374151" : "#6b7280",
         transition: "color 0.15s",
@@ -202,8 +236,6 @@ function NavItem({ href, active, onClick, icon, label, accent }: NavItemProps) {
       }}>
         {label}
       </span>
-
-      {/* Active chevron */}
       {active && (
         <ChevronRight className="w-3.5 h-3.5 shrink-0" style={{ color: accent, opacity: 0.6 }} />
       )}

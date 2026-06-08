@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, date, time, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -57,3 +57,35 @@ export const insightsTable = pgTable("insights", {
 export const insertInsightSchema = createInsertSchema(insightsTable).omit({ id: true, createdAt: true });
 export type InsertInsight = z.infer<typeof insertInsightSchema>;
 export type Insight = typeof insightsTable.$inferSelect;
+
+// ── Shifts ────────────────────────────────────────────────────────────────────
+// Admin-editable shifts per plant (e.g. "Morning", "07:00", "15:00")
+export const shiftsTable = pgTable("shifts", {
+  id: serial("id").primaryKey(),
+  plantId: integer("plant_id").references(() => plantsTable.id).notNull(),
+  name: text("name").notNull(),          // e.g. "Morning"
+  startTime: text("start_time").notNull(), // "HH:MM" 24h
+  endTime: text("end_time").notNull(),     // "HH:MM" 24h
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertShiftSchema = createInsertSchema(shiftsTable).omit({ id: true, createdAt: true });
+export type InsertShift = z.infer<typeof insertShiftSchema>;
+export type Shift = typeof shiftsTable.$inferSelect;
+
+// ── Alert Reads ───────────────────────────────────────────────────────────────
+// Tracks which alerts a user has dismissed (mark as read)
+// alert_key is a deterministic string e.g. "missed:production:Morning:2024-06-08"
+// or "below_target:quality:2024-06"
+export const alertReadsTable = pgTable("alert_reads", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),     // Supabase user UUID
+  alertKey: text("alert_key").notNull(),
+  readAt: timestamp("read_at").defaultNow().notNull(),
+}, (t) => ({
+  uniq: unique().on(t.userId, t.alertKey),
+}));
+
+export const insertAlertReadSchema = createInsertSchema(alertReadsTable).omit({ id: true, readAt: true });
+export type InsertAlertRead = z.infer<typeof insertAlertReadSchema>;
+export type AlertRead = typeof alertReadsTable.$inferSelect;

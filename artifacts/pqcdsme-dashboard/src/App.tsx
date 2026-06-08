@@ -16,6 +16,7 @@ import MoralePage from "./pages/MoralePage";
 import EnvironmentPage from "./pages/EnvironmentPage";
 import TargetsPage from "./pages/TargetPage";
 import { AcceptInvitePage } from "./pages/AcceptInvite";
+import { AlertsPage } from "./pages/AlertPage";
 
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -53,11 +54,13 @@ function AppShell() {
                 <Route path="/morale" component={MoralePage} />
                 <Route path="/environment" component={EnvironmentPage} />
                 <Route path="/targets" component={TargetsPage} />
+                <Route path="/alerts" component={AlertsPage} />
                 <Route>
                   <div className="flex flex-col items-center justify-center pt-20">
                     <h1 className="text-2xl font-bold text-gray-900">404 - Not Found</h1>
                   </div>
                 </Route>
+                
               </Switch>
             </main>
           </div>

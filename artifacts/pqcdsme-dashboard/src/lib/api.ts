@@ -59,7 +59,7 @@ export const api = {
     return request<{ date: string; value: number }[]>(`/stats/cumulative?${query}`);
   },
   getStatsMoM: (plantId: number, section: string, fieldKey: string, year?: number) => {
-    const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey, });
+    const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey });
     if (year !== undefined) query.set('year', String(year));
     return request<{ month: string; monthNum: string; value: number }[]>(`/stats/mom?${query}`);
   },
@@ -67,7 +67,8 @@ export const api = {
     const query = new URLSearchParams({ plantId: String(plantId), section, fieldKey });
     return request<{ year: number; month: string; monthNum: number; value: number }[]>(`/stats/yoy?${query}`);
   },
-  // Admin
+
+  // Admin — Users
   getAdminUsers: () =>
     request<{
       id: string;
@@ -77,19 +78,40 @@ export const api = {
       plantId: number | null;
       createdAt: string;
     }[]>("/admin/users"),
-
   updateAdminUser: (id: string, data: { role?: string; plantId?: number | null }) =>
-    request(`/admin/users/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    }),
-
+    request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteAdminUser: (id: string) =>
     request(`/admin/users/${id}`, { method: "DELETE" }),
-
   inviteUser: (data: { email: string; role: string; plantId: number | null }) =>
-    request("/admin/invite", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    request("/admin/invite", { method: "POST", body: JSON.stringify(data) }),
+
+  // Shifts
+  getShifts: (plantId: number) =>
+    request<{ id: number; plantId: number; name: string; startTime: string; endTime: string }[]>(
+      `/shifts?plantId=${plantId}`
+    ),
+  createShift: (data: { plantId: number; name: string; startTime: string; endTime: string }) =>
+    request<{ id: number; plantId: number; name: string; startTime: string; endTime: string }>(
+      '/shifts', { method: 'POST', body: JSON.stringify(data) }
+    ),
+  updateShift: (id: number, data: { name?: string; startTime?: string; endTime?: string }) =>
+    request<{ id: number; plantId: number; name: string; startTime: string; endTime: string }>(
+      `/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }
+    ),
+  deleteShift: (id: number) =>
+    request(`/shifts/${id}`, { method: 'DELETE' }),
+
+  // Alerts
+  getAlerts: (plantId: number) =>
+    request<{
+      key: string;
+      type: "missed_entry" | "below_target";
+      severity: "warning" | "critical";
+      title: string;
+      description: string;
+      section: string;
+      read: boolean;
+    }[]>(`/alerts?plantId=${plantId}`),
+  markAlertsRead: (alertKeys: string[]) =>
+    request('/alerts/read', { method: 'POST', body: JSON.stringify({ alertKeys }) }),
 };

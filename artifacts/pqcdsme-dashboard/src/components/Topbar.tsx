@@ -1,9 +1,12 @@
-import React from "react";
-import { Menu, LogOut } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { Menu, LogOut, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AdminModal } from "./AdminModal";
-import { useEffect,useState } from "react";
-import {api} from "../lib/api";
+import { api } from "../lib/api";
+import { Link } from "wouter";
+
+const PLANT_ID = 1;
+const POLL_INTERVAL_MS = 60_000; // refresh alerts every 60s
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -17,82 +20,112 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   });
 
   const roleColors: Record<string, string> = {
-    admin: "bg-purple-100 text-purple-800 border-purple-200",
+    admin:    "bg-purple-100 text-purple-800 border-purple-200",
     operator: "bg-blue-100 text-blue-800 border-blue-200",
-    viewer: "bg-gray-100 text-gray-800 border-gray-200",
+    viewer:   "bg-gray-100 text-gray-800 border-gray-200",
   };
 
   const roleColor = profile?.role ? roleColors[profile.role] : roleColors.viewer;
   const [adminOpen, setAdminOpen] = useState(false);
   const [plantName, setPlantName] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (profile?.plantId) {
       api.getPlants().then(plants => {
-        const match = plants.find(p => p.id === profile.plantId);
+        const match = plants.find((p: any) => p.id === profile.plantId);
         setPlantName(match?.name ?? null);
       });
     }
   }, [profile?.plantId]);
 
+  // Only admins and operators see alerts
+  const canSeeAlerts = profile?.role === "admin" || profile?.role === "operator";
+
+  const fetchUnread = useCallback(async () => {
+    if (!canSeeAlerts) return;
+    try {
+      const alerts = await api.getAlerts(PLANT_ID);
+      setUnreadCount(alerts.filter((a: any) => !a.read).length);
+    } catch {
+      // silently fail — alerts are non-critical
+    }
+  }, [canSeeAlerts]);
+
+  useEffect(() => {
+    fetchUnread();
+    const interval = setInterval(fetchUnread, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchUnread]);
+
   return (
-      <header className="sticky top-0 z-40 flex h-[52px] w-full items-center justify-between bg-white px-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 flex h-[52px] w-full items-center justify-between bg-white px-4 border-b border-gray-200">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuClick}
+          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          data-testid="button-menu"
+        >
+          <Menu className="w-5 h-5 text-gray-700" />
+        </button>
+        <h1 className="text-base font-semibold text-gray-900 tracking-tight">PQCDSME Dashboard</h1>
+      </div>
+
+      <div className="flex items-center gap-2">
+
+        {/* Role badge */}
+        {profile?.role && (
+          <div className={`px-2.5 py-1 text-xs font-medium rounded-md border capitalize hidden sm:block ${roleColor}`}>
+            {profile.fullName ?? profile.role}
+          </div>
+        )}
+
+        {/* Bell icon — admins + operators only */}
+        {canSeeAlerts && (
+          <Link href="/alerts">
+            <button className="relative p-1.5 hover:bg-gray-100 rounded-md transition-colors text-gray-500 hover:text-gray-800">
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </Link>
+        )}
+
+        {/* Admin users button — only visible to admins */}
+        {profile?.role === "admin" && (
           <button
-            onClick={onMenuClick}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-            data-testid="button-menu"
+            onClick={() => setAdminOpen(true)}
+            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-1.5 rounded-lg"
           >
-            <Menu className="w-5 h-5 text-gray-700" />
+            ⚙ Users
           </button>
-          <h1 className="text-base font-semibold text-gray-900 tracking-tight">PQCDSME Dashboard</h1>
+        )}
+
+        {/* Plant badge */}
+        <div className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md border border-gray-200">
+          {plantName ?? (profile?.plantId ? `Plant ${profile.plantId}` : "All Plants")}
         </div>
 
-        <div className="flex items-center gap-2">
-
-          {/* Role badge */}
-          {profile?.role && (
-            <div className={`px-2.5 py-1 text-xs font-medium rounded-md border capitalize hidden sm:block ${roleColor}`}>
-              {profile.fullName ?? profile.role}
-            </div>
-          )}
-
-          {/* Admin users button — only visible to admins */}
-          {profile?.role === "admin" && (
-            <>
-              <button
-                onClick={() => setAdminOpen(true)}
-                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-1.5 rounded-lg"
-              >
-                ⚙ Users
-              </button>
-              <AdminModal open={adminOpen} onClose={() => setAdminOpen(false)} />
-            </>
-          )}
-
-          {/* Plant badge */}
-          <div className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md border border-gray-200">
-            {plantName ?? (profile?.plantId ? `Plant ${profile.plantId}` : "All Plants")}
-          </div>
-
-          {/* Date */}
-          <div className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md border border-gray-200 hidden sm:block">
-            {today}
-          </div>
-
-          {/* Sign out */}
-          <button
-            onClick={signOut}
-            className="p-1.5 hover:bg-red-50 hover:text-red-600 text-gray-500 rounded-md transition-colors"
-            title="Sign out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-
+        {/* Date */}
+        <div className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md border border-gray-200 hidden sm:block">
+          {today}
         </div>
 
-        {/* Modal rendered outside the flex row so it overlays correctly */}
-        <AdminModal open={adminOpen} onClose={() => setAdminOpen(false)} />
-      </header>
+        {/* Sign out */}
+        <button
+          onClick={signOut}
+          className="p-1.5 hover:bg-red-50 hover:text-red-600 text-gray-500 rounded-md transition-colors"
+          title="Sign out"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+
+      </div>
+
+      <AdminModal open={adminOpen} onClose={() => setAdminOpen(false)} />
+    </header>
   );
 }
