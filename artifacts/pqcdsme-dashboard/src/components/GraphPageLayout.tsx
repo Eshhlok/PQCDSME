@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { ChevronLeft, Edit2, Check, X } from "lucide-react";
 import { api } from "../lib/api";
@@ -136,6 +136,11 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
   const cumulativeMonth = selectedMonth ?? currentMonth;
   const cumulativeYear  = selectedYear  ?? currentYear;
 
+  const years = useMemo(
+    () => [...new Set(yoyData.map(r => Number(r.year)))].sort(),
+    [yoyData]
+  );
+
   // Initial load: today, MoM (default), YoY, targets
   useEffect(() => {
     const fetchInit = async () => {
@@ -212,12 +217,14 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleYoyClick = useCallback((_event: any, elements: any[]) => {
+    console.log('elements:', elements);
+    console.log('years array:', years);
     if (!elements.length) return;
     const idx = elements[0].index;
     const clickedYear = years[idx];
     setSelectedYear(clickedYear);
     setSelectedMonth(1); // default to January when drilling from YoY
-  }, []);
+  }, [years]);
 
   const handleMomClick = useCallback((_event: any, elements: any[]) => {
     if (!elements.length) return;
@@ -315,7 +322,6 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
   };
 
   // YoY: one bar per year, highlight selected year
-  const years = [...new Set(yoyData.map(r => Number(r.year)))].sort();
   const yoyChartData = {
     labels: years.map(String),
     datasets: [{
