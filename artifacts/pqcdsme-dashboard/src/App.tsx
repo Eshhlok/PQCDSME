@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Topbar } from "./components/Topbar";
 import { Sidebar } from "./components/Sidebar";
+import { Footer } from "./components/Footer";
 
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -60,9 +61,9 @@ function AppShell() {
                     <h1 className="text-2xl font-bold text-gray-900">404 - Not Found</h1>
                   </div>
                 </Route>
-                
               </Switch>
             </main>
+            <Footer />
           </div>
         </ProtectedRoute>
       </Route>
