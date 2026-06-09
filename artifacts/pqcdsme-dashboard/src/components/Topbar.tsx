@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Menu, LogOut, Bell } from "lucide-react";
+import { LogOut, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AdminModal } from "./AdminModal";
 import { api } from "../lib/api";
@@ -85,9 +85,11 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           onClick={onMenuClick}
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
           data-testid="button-menu"
+          title="Menu"
         >
-          <Menu className="w-5 h-5 text-gray-700" />
+          <img src="/favicon-96x96.png" alt="menu" className="w-7 h-7 rounded-md" />
         </button>
+        
         <h1 className="text-base font-semibold text-gray-900 tracking-tight">PQCDSME Dashboard</h1>
       </div>
 
