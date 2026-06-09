@@ -7,6 +7,8 @@ import insightsRouter from "./insights";
 import statsRouter from "./stats";
 import adminRouter from "./admin";
 import { requireAuth, scopeToPlant } from "../middleware/auth";
+import shiftsRouter from "./shifts"; 
+import alertsRouter from "./alert";   
 
 const router: IRouter = Router();
 
@@ -26,5 +28,7 @@ router.use(insightsRouter);
 router.use(statsRouter);
 router.use(plantsRouter);
 router.use("/admin", adminRouter);
+router.use(shiftsRouter);  
+router.use(alertsRouter);
 
 export default router;

@@ -29,7 +29,7 @@ export function AlertsPage() {
   const [alerts, setAlerts]     = useState<Alert[]>([]);
   const [loading, setLoading]   = useState(true);
   const [marking, setMarking]   = useState<Set<string>>(new Set());
-  const [filter, setFilter]     = useState<"all" | "unread">("all");
+  const [filter, setFilter]     = useState<"all" | "unread">("unread");
 
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
@@ -52,6 +52,7 @@ export function AlertsPage() {
     try {
       await api.markAlertsRead(keys);
       setAlerts(prev => prev.map(a => keys.includes(a.key) ? { ...a, read: true } : a));
+      window.dispatchEvent(new Event("alerts-updated"));
     } catch (err) {
       console.error("Failed to mark alerts read:", err);
     } finally {

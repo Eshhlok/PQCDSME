@@ -6,7 +6,7 @@ import { api } from "../lib/api";
 import { Link } from "wouter";
 
 const PLANT_ID = 1;
-const POLL_INTERVAL_MS = 60_000; // refresh alerts every 60s
+const POLL_INTERVAL_MS = 10_000; // refresh alerts every 10s
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -57,6 +57,12 @@ export function Topbar({ onMenuClick }: TopbarProps) {
     const interval = setInterval(fetchUnread, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchUnread]);
+
+  useEffect(() => {
+  const handler = () => fetchUnread();
+  window.addEventListener("alerts-updated", handler);
+  return () => window.removeEventListener("alerts-updated", handler);
+}, [fetchUnread]);
 
   return (
     <header className="sticky top-0 z-40 flex h-[52px] w-full items-center justify-between bg-white px-4 border-b border-gray-200">

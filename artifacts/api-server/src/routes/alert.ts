@@ -215,6 +215,7 @@ router.post("/alerts/read", async (req, res) => {
 
     res.json({ success: true });
   } catch (err: any) {
+    console.error('ALERTS ERROR:', err);
     res.status(500).json({ error: "Failed to mark alerts read", details: String(err) });
   }
 });
