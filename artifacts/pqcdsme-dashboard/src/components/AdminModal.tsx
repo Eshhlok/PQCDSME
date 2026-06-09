@@ -43,29 +43,28 @@ export function AdminModal({ open, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("users");
 
   // ── Users state ──────────────────────────────────────────────────────────
-  const [users, setUsers]             = useState<AdminUser[]>([]);
+  const [users, setUsers]               = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-  const [edits, setEdits]             = useState<Record<string, { role: Role; plantId: number | null }>>({});
-  const [saving, setSaving]           = useState<Record<string, boolean>>({});
-  const [deleting, setDeleting]       = useState<Record<string, boolean>>({});
+  const [error, setError]               = useState<string | null>(null);
+  const [edits, setEdits]               = useState<Record<string, { role: Role; plantId: number | null }>>({});
+  const [saving, setSaving]             = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting]         = useState<Record<string, boolean>>({});
 
-  // invite form
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole]   = useState<Role>("operator");
-  const [invitePlant, setInvitePlant] = useState<number | null>(1);
-  const [inviting, setInviting]       = useState(false);
-  const [inviteDone, setInviteDone]   = useState(false);
+  const [inviteEmail, setInviteEmail]   = useState("");
+  const [inviteRole, setInviteRole]     = useState<Role>("operator");
+  const [invitePlant, setInvitePlant]   = useState<number | null>(1);
+  const [inviting, setInviting]         = useState(false);
+  const [inviteDone, setInviteDone]     = useState(false);
 
   // ── Shifts state ─────────────────────────────────────────────────────────
-  const [shifts, setShifts]           = useState<Shift[]>([]);
-  const [loadingShifts, setLoadingShifts] = useState(false);
-  const [shiftError, setShiftError]   = useState<string | null>(null);
-  const [newShift, setNewShift]       = useState({ name: "", startTime: "", endTime: "" });
-  const [addingShift, setAddingShift] = useState(false);
-  const [shiftEdits, setShiftEdits]   = useState<Record<number, { name: string; startTime: string; endTime: string }>>({});
-  const [savingShift, setSavingShift] = useState<Record<number, boolean>>({});
-  const [deletingShift, setDeletingShift] = useState<Record<number, boolean>>({});
+  const [shifts, setShifts]                 = useState<Shift[]>([]);
+  const [loadingShifts, setLoadingShifts]   = useState(false);
+  const [shiftError, setShiftError]         = useState<string | null>(null);
+  const [newShift, setNewShift]             = useState({ name: "", startTime: "", endTime: "" });
+  const [addingShift, setAddingShift]       = useState(false);
+  const [shiftEdits, setShiftEdits]         = useState<Record<number, { name: string; startTime: string; endTime: string }>>({});
+  const [savingShift, setSavingShift]       = useState<Record<number, boolean>>({});
+  const [deletingShift, setDeletingShift]   = useState<Record<number, boolean>>({});
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -245,9 +244,14 @@ export function AdminModal({ open, onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Admin Panel</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Manage users, roles, plants and shifts</p>
+            <p className="text-xs text-gray-500 mt-0.5">Manage users, roles, plants and shifts</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            title="Close"
+            className="text-gray-500 hover:text-gray-700 text-lg leading-none"
+          >✕</button>
         </div>
 
         {/* Tabs */}
@@ -256,10 +260,11 @@ export function AdminModal({ open, onClose }: Props) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
+              aria-selected={activeTab === tab}
               className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-colors capitalize ${
                 activeTab === tab
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-400 hover:text-gray-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab === "users" ? "👤 Users" : "🕐 Shifts"}
@@ -275,7 +280,7 @@ export function AdminModal({ open, onClose }: Props) {
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex justify-between">
                   <span>{error}</span>
-                  <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
+                  <button onClick={() => setError(null)} aria-label="Dismiss error" className="ml-4 text-red-500 hover:text-red-700">✕</button>
                 </div>
               )}
 
@@ -288,39 +293,67 @@ export function AdminModal({ open, onClose }: Props) {
                   </div>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="email"
-                    placeholder="colleague@company.com"
-                    value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleInvite(); }}
-                    className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <select value={inviteRole} onChange={e => setInviteRole(e.target.value as Role)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-                  </select>
-                  <select value={invitePlant ?? ""} onChange={e => setInvitePlant(e.target.value ? Number(e.target.value) : null)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">No plant</option>
-                    {PLANTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                  <button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}
-                    className="text-sm bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                    {inviting ? "Sending…" : "Send invite"}
-                  </button>
+                  {/* Email */}
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label htmlFor="invite-email" className="text-xs text-gray-500 font-medium">Email address</label>
+                    <input
+                      id="invite-email"
+                      type="email"
+                      placeholder="colleague@company.com"
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") handleInvite(); }}
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Role */}
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="invite-role" className="text-xs text-gray-500 font-medium">Role</label>
+                    <select
+                      id="invite-role"
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value as Role)}
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                    </select>
+                  </div>
+                  {/* Plant */}
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="invite-plant" className="text-xs text-gray-500 font-medium">Plant</label>
+                    <select
+                      id="invite-plant"
+                      value={invitePlant ?? ""}
+                      onChange={e => setInvitePlant(e.target.value ? Number(e.target.value) : null)}
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">No plant</option>
+                      {PLANTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  {/* Submit — align to bottom */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-transparent select-none">Send</span>
+                    <button
+                      onClick={handleInvite}
+                      disabled={inviting || !inviteEmail.trim()}
+                      className="text-sm bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {inviting ? "Sending…" : "Send invite"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Users table */}
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  All users {!loadingUsers && <span className="text-gray-400 font-normal">({users.length})</span>}
+                  All users {!loadingUsers && <span className="text-gray-500 font-normal">({users.length})</span>}
                 </h3>
                 {loadingUsers ? (
-                  <div className="text-sm text-gray-400 py-8 text-center">Loading users…</div>
+                  <div className="text-sm text-gray-500 py-8 text-center">Loading users…</div>
                 ) : users.length === 0 ? (
-                  <div className="text-sm text-gray-400 py-8 text-center">No users found.</div>
+                  <div className="text-sm text-gray-500 py-8 text-center">No users found.</div>
                 ) : (
                   <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
                     {users.map(u => {
@@ -331,32 +364,50 @@ export function AdminModal({ open, onClose }: Props) {
                         <div key={u.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {u.fullName ?? <span className="text-gray-400 italic">Pending</span>}
-                              {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                              {u.fullName ?? <span className="text-gray-500 italic">Pending</span>}
+                              {isSelf && <span className="ml-2 text-xs text-gray-500">(you)</span>}
                             </p>
-                            <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                            <p className="text-xs text-gray-500 truncate">{u.email}</p>
                           </div>
                           {!dirty && (
                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_PILL[u.role]}`}>{u.role}</span>
                           )}
-                          <select value={e.role} disabled={isSelf} onChange={ev => patchEdit(u.id, { role: ev.target.value as Role })}
-                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                          <label htmlFor={`role-${u.id}`} className="sr-only">Role for {u.fullName ?? u.email}</label>
+                          <select
+                            id={`role-${u.id}`}
+                            value={e.role}
+                            disabled={isSelf}
+                            onChange={ev => patchEdit(u.id, { role: ev.target.value as Role })}
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                          >
                             {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                           </select>
-                          <select value={e.plantId ?? ""} onChange={ev => patchEdit(u.id, { plantId: ev.target.value ? Number(ev.target.value) : null })}
-                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <label htmlFor={`plant-${u.id}`} className="sr-only">Plant for {u.fullName ?? u.email}</label>
+                          <select
+                            id={`plant-${u.id}`}
+                            value={e.plantId ?? ""}
+                            onChange={ev => patchEdit(u.id, { plantId: ev.target.value ? Number(ev.target.value) : null })}
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
                             <option value="">No plant</option>
                             {PLANTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                           </select>
                           {dirty && (
-                            <button onClick={() => saveUser(u)} disabled={saving[u.id]}
-                              className="text-xs bg-blue-600 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-blue-700 disabled:opacity-50">
+                            <button
+                              onClick={() => saveUser(u)}
+                              disabled={saving[u.id]}
+                              className="text-xs bg-blue-600 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-blue-700 disabled:opacity-50"
+                            >
                               {saving[u.id] ? "Saving…" : "Save"}
                             </button>
                           )}
-                          <button onClick={() => deleteUser(u.id)} disabled={deleting[u.id] || isSelf}
+                          <button
+                            onClick={() => deleteUser(u.id)}
+                            disabled={deleting[u.id] || isSelf}
+                            aria-label={`Remove ${u.fullName ?? u.email}`}
                             title={isSelf ? "Can't delete your own account" : "Remove user"}
-                            className="text-xs text-red-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed px-1">
+                            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                          >
                             {deleting[u.id] ? "…" : "✕"}
                           </button>
                         </div>
@@ -374,40 +425,53 @@ export function AdminModal({ open, onClose }: Props) {
               {shiftError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex justify-between">
                   <span>{shiftError}</span>
-                  <button onClick={() => setShiftError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
+                  <button onClick={() => setShiftError(null)} aria-label="Dismiss error" className="ml-4 text-red-500 hover:text-red-700">✕</button>
                 </div>
               )}
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500">
                 Shifts define when data entries are expected. A "missed entry" alert fires for each section if no data was entered during a completed shift.
               </p>
 
               {/* Add new shift */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-700">Add new shift</h3>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    placeholder="Shift name (e.g. Morning)"
-                    value={newShift.name}
-                    onChange={e => setNewShift(s => ({ ...s, name: e.target.value }))}
-                    className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500 whitespace-nowrap">Start</label>
-                    <input type="time" value={newShift.startTime}
+                <div className="flex flex-col sm:flex-row gap-2 items-end">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label htmlFor="new-shift-name" className="text-xs text-gray-500 font-medium">Shift name</label>
+                    <input
+                      id="new-shift-name"
+                      placeholder="e.g. Morning"
+                      value={newShift.name}
+                      onChange={e => setNewShift(s => ({ ...s, name: e.target.value }))}
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="new-shift-start" className="text-xs text-gray-500 font-medium">Start time</label>
+                    <input
+                      id="new-shift-start"
+                      type="time"
+                      value={newShift.startTime}
                       onChange={e => setNewShift(s => ({ ...s, startTime: e.target.value }))}
                       className="text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500 whitespace-nowrap">End</label>
-                    <input type="time" value={newShift.endTime}
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="new-shift-end" className="text-xs text-gray-500 font-medium">End time</label>
+                    <input
+                      id="new-shift-end"
+                      type="time"
+                      value={newShift.endTime}
                       onChange={e => setNewShift(s => ({ ...s, endTime: e.target.value }))}
                       className="text-sm border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <button onClick={handleAddShift} disabled={addingShift}
-                    className="text-sm bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap">
+                  <button
+                    onClick={handleAddShift}
+                    disabled={addingShift}
+                    className="text-sm bg-blue-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                  >
                     {addingShift ? "Adding…" : "+ Add"}
                   </button>
                 </div>
@@ -415,9 +479,9 @@ export function AdminModal({ open, onClose }: Props) {
 
               {/* Shifts list */}
               {loadingShifts ? (
-                <div className="text-sm text-gray-400 py-8 text-center">Loading shifts…</div>
+                <div className="text-sm text-gray-500 py-8 text-center">Loading shifts…</div>
               ) : shifts.length === 0 ? (
-                <div className="text-sm text-gray-400 py-8 text-center">No shifts defined yet. Add one above.</div>
+                <div className="text-sm text-gray-500 py-8 text-center">No shifts defined yet. Add one above.</div>
               ) : (
                 <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
                   {shifts.map(s => {
@@ -425,32 +489,49 @@ export function AdminModal({ open, onClose }: Props) {
                     const dirty = isShiftDirty(s);
                     return (
                       <div key={s.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50">
-                        <input value={e.name}
+                        <label htmlFor={`shift-name-${s.id}`} className="sr-only">Shift name</label>
+                        <input
+                          id={`shift-name-${s.id}`}
+                          value={e.name}
                           onChange={ev => setShiftEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], name: ev.target.value } }))}
                           className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <div className="flex items-center gap-1">
-                          <label className="text-xs text-gray-500">Start</label>
-                          <input type="time" value={e.startTime}
+                          <label htmlFor={`shift-start-${s.id}`} className="text-xs text-gray-500">Start</label>
+                          <input
+                            id={`shift-start-${s.id}`}
+                            type="time"
+                            value={e.startTime}
                             onChange={ev => setShiftEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], startTime: ev.target.value } }))}
                             className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex items-center gap-1">
-                          <label className="text-xs text-gray-500">End</label>
-                          <input type="time" value={e.endTime}
+                          <label htmlFor={`shift-end-${s.id}`} className="text-xs text-gray-500">End</label>
+                          <input
+                            id={`shift-end-${s.id}`}
+                            type="time"
+                            value={e.endTime}
                             onChange={ev => setShiftEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], endTime: ev.target.value } }))}
                             className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         {dirty && (
-                          <button onClick={() => saveShift(s)} disabled={savingShift[s.id]}
-                            className="text-xs bg-blue-600 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-blue-700 disabled:opacity-50">
+                          <button
+                            onClick={() => saveShift(s)}
+                            disabled={savingShift[s.id]}
+                            className="text-xs bg-blue-600 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-blue-700 disabled:opacity-50"
+                          >
                             {savingShift[s.id] ? "Saving…" : "Save"}
                           </button>
                         )}
-                        <button onClick={() => deleteShift(s.id)} disabled={deletingShift[s.id]}
-                          className="text-xs text-red-400 hover:text-red-600 disabled:opacity-30 px-1">
+                        <button
+                          onClick={() => deleteShift(s.id)}
+                          disabled={deletingShift[s.id]}
+                          aria-label={`Delete shift ${s.name}`}
+                          title={`Delete ${s.name} shift`}
+                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-30 px-1"
+                        >
                           {deletingShift[s.id] ? "…" : "✕"}
                         </button>
                       </div>

@@ -86,8 +86,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
           data-testid="button-menu"
           title="Menu"
+          aria-label="Open menu"
         >
-          <img src="/favicon-96x96.png" alt="menu" className="w-7 h-7 rounded-md" />
+          <img src="/favicon.ico" alt="menu" className="w-7 h-7 rounded-md" />
         </button>
         
         <h1 className="text-base font-semibold text-gray-900 tracking-tight">PQCDSME Dashboard</h1>
@@ -104,7 +105,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
         {/* Bell icon — admins + operators only */}
         {canSeeAlerts && (
-          <Link href="/alerts">
+          <Link href="/alerts" aria-label="View alerts">
             <button className="relative p-1.5 hover:bg-gray-100 rounded-md transition-colors text-gray-500 hover:text-gray-800">
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -121,6 +122,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <button
             onClick={() => setAdminOpen(true)}
             className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-1.5 rounded-lg"
+            aria-label="Manage users"
           >
             ⚙ Users
           </button>
@@ -141,6 +143,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           onClick={signOut}
           className="p-1.5 hover:bg-red-50 hover:text-red-600 text-gray-500 rounded-md transition-colors"
           title="Sign out"
+          aria-label="Sign out"
         >
           <LogOut className="w-4 h-4" />
         </button>

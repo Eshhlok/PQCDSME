@@ -64,7 +64,9 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
         <p className="text-sm text-gray-700 pr-8">{text}</p>
         <button
           onClick={() => setEditing(true)}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Edit insight"
+          title="Edit insight"
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Edit2 className="w-4 h-4" />
         </button>
@@ -95,15 +97,32 @@ function InsightBox({ section, chartType, defaultText }: { section: string; char
   );
 }
 
-// Breadcrumb chip pill
 function DrillChip({ label, onClear }: { label: string; onClear: () => void }) {
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
       {label}
-      <button onClick={onClear} className="ml-0.5 hover:text-blue-900">
+      <button onClick={onClear} aria-label="Clear filter" title="Clear filter" className="ml-0.5 hover:text-blue-900">
         <X className="w-3 h-3" />
       </button>
     </span>
+  );
+}
+
+// Consistent chart placeholder — same height as charts so no layout shift
+function ChartPlaceholder({ text }: { text: string }) {
+  return (
+    <div className="h-[250px] flex items-center justify-center">
+      <p className="text-sm text-gray-500 text-center">{text}</p>
+    </div>
+  );
+}
+
+// Consistent loading placeholder — same height as charts
+function ChartLoader() {
+  return (
+    <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
+      Loading...
+    </div>
   );
 }
 
@@ -113,26 +132,19 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  // Drill-down state
-  // selectedYear: null = default (all years in YoY, last 6 months in MoM)
-  //               number = a specific year was clicked in YoY
-  // selectedMonth: null = use currentMonth for cumulative
-  //                number = a specific month was clicked in MoM
   const [selectedYear, setSelectedYear]   = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
-  // Chart data
   const [todayData, setTodayData]           = useState<{ hour: string; value: number }[]>([]);
   const [cumulativeData, setCumulativeData] = useState<{ date: string; value: number }[]>([]);
   const [momData, setMomData]               = useState<{ month: string; monthNum: string; value: number }[]>([]);
   const [yoyData, setYoyData]               = useState<{ year: number; month: string; monthNum: number; value: number }[]>([]);
   const [targetValue, setTargetValue]       = useState<number | null>(null);
 
-  const [loadingInit, setLoadingInit]       = useState(true);
-  const [loadingMom, setLoadingMom]         = useState(false);
+  const [loadingInit, setLoadingInit]             = useState(true);
+  const [loadingMom, setLoadingMom]               = useState(false);
   const [loadingCumulative, setLoadingCumulative] = useState(false);
 
-  // Derived: which month/year to show in cumulative
   const cumulativeMonth = selectedMonth ?? currentMonth;
   const cumulativeYear  = selectedYear  ?? currentYear;
 
@@ -141,7 +153,6 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     [yoyData]
   );
 
-  // Initial load: today, MoM (default), YoY, targets
   useEffect(() => {
     const fetchInit = async () => {
       setLoadingInit(true);
@@ -170,9 +181,8 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     fetchInit();
   }, [section, fieldKey, targetFieldKey]);
 
-  // Fetch MoM whenever selectedYear changes (null = default last 6 months)
   useEffect(() => {
-    if (loadingInit) return; // wait for initial load
+    if (loadingInit) return;
     const fetchMom = async () => {
       setLoadingMom(true);
       try {
@@ -187,7 +197,6 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     fetchMom();
   }, [selectedYear]);
 
-  // Fetch cumulative whenever cumulativeMonth or cumulativeYear changes
   useEffect(() => {
     const fetchCumulative = async () => {
       setLoadingCumulative(true);
@@ -214,35 +223,25 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     fetchCumulative();
   }, [cumulativeMonth, cumulativeYear, section, fieldKey, targetFieldKey]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
   const handleYoyClick = useCallback((_event: any, elements: any[]) => {
-    console.log('elements:', elements);
-    console.log('years array:', years);
     if (!elements.length) return;
     const idx = elements[0].index;
     const clickedYear = years[idx];
     setSelectedYear(clickedYear);
-    setSelectedMonth(1); // default to January when drilling from YoY
+    setSelectedMonth(1);
   }, [years]);
 
   const handleMomClick = useCallback((_event: any, elements: any[]) => {
     if (!elements.length) return;
     const idx = elements[0].index;
-    const monthNumStr = momData[idx]?.monthNum; // "YYYY-MM"
+    const monthNumStr = momData[idx]?.monthNum;
     if (!monthNumStr) return;
     const monthNum = parseInt(monthNumStr.split('-')[1], 10);
     setSelectedMonth(monthNum);
   }, [momData]);
 
-  const clearYear = () => {
-    setSelectedYear(null);
-    setSelectedMonth(null);
-  };
-
-  const clearMonth = () => {
-    setSelectedMonth(null);
-  };
+  const clearYear = () => { setSelectedYear(null); setSelectedMonth(null); };
+  const clearMonth = () => { setSelectedMonth(null); };
 
   // ── KPI calculations ───────────────────────────────────────────────────────
 
@@ -258,10 +257,8 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     ? (((Number(thisMonthMoM.value) - Number(lastMonthMoM.value)) / Number(lastMonthMoM.value)) * 100).toFixed(1)
     : 'N/A';
 
-  const thisYearYoY   = yoyData.filter(r => Number(r.year) === currentYear);
-  const lastYearYoY   = yoyData.filter(r => Number(r.year) === currentYear - 1);
-  const thisYearTotal = thisYearYoY.reduce((s, r) => s + Number(r.value), 0);
-  const lastYearTotal = lastYearYoY.reduce((s, r) => s + Number(r.value), 0);
+  const thisYearTotal = yoyData.filter(r => Number(r.year) === currentYear).reduce((s, r) => s + Number(r.value), 0);
+  const lastYearTotal = yoyData.filter(r => Number(r.year) === currentYear - 1).reduce((s, r) => s + Number(r.value), 0);
   const yoyPct = lastYearTotal > 0
     ? (((thisYearTotal - lastYearTotal) / lastYearTotal) * 100).toFixed(1)
     : 'N/A';
@@ -270,12 +267,7 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
 
   const todayChartData = {
     labels: todayData.map(r => r.hour),
-    datasets: [{
-      label: 'Actual',
-      data: todayData.map(r => Number(r.value)),
-      backgroundColor: color,
-      borderRadius: 4,
-    }]
+    datasets: [{ label: 'Actual', data: todayData.map(r => Number(r.value)), backgroundColor: color, borderRadius: 4 }]
   };
 
   const cumulativeChartData = {
@@ -304,7 +296,6 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     ]
   };
 
-  // MoM: highlight the selected month bar
   const momChartData = {
     labels: momData.map(r => r.month),
     datasets: [{
@@ -312,25 +303,19 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
       data: momData.map(r => Number(r.value)),
       backgroundColor: momData.map((r) => {
         const mNum = parseInt(r.monthNum.split('-')[1], 10);
-        if (selectedMonth !== null && mNum === selectedMonth) return color;          // selected = full color
-        if (selectedMonth === null && r.monthNum === `${currentYear}-${String(currentMonth).padStart(2, '0')}`) return color; // current month default
+        if (selectedMonth !== null && mNum === selectedMonth) return color;
+        if (selectedMonth === null && r.monthNum === `${currentYear}-${String(currentMonth).padStart(2, '0')}`) return color;
         return `${color}66`;
       }),
       borderRadius: 4,
-      cursor: 'pointer',
     }]
   };
 
-  // YoY: one bar per year, highlight selected year
   const yoyChartData = {
     labels: years.map(String),
     datasets: [{
       label: 'Annual Total',
-      data: years.map(y =>
-        yoyData
-          .filter(r => Number(r.year) === y)
-          .reduce((sum, r) => sum + Number(r.value), 0)
-      ),
+      data: years.map(y => yoyData.filter(r => Number(r.year) === y).reduce((sum, r) => sum + Number(r.value), 0)),
       backgroundColor: years.map((y) => {
         if (selectedYear !== null && y === selectedYear) return color;
         if (selectedYear === null && y === currentYear) return color;
@@ -354,20 +339,36 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     },
     plugins: {
       ...commonOptions.plugins,
-      tooltip: {
-        callbacks: {
-          footer: () => 'Click to drill down ↓'
-        }
-      }
+      tooltip: { callbacks: { footer: () => 'Click to drill down ↓' } }
     }
   });
 
-  // Human-readable label for cumulative header
   const cumulativeLabel = `${MONTH_NAMES[cumulativeMonth - 1]} ${cumulativeYear}`;
 
+  // ── Skeleton loader — same layout as real content, no shift ───────────────
   if (loadingInit) return (
-    <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-      Loading charts...
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header skeleton */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-gray-200 rounded-md animate-pulse" />
+        <div className="w-48 h-7 bg-gray-200 rounded animate-pulse" />
+      </div>
+      {/* KPI skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white p-4 border border-gray-200 rounded-lg">
+            <div className="w-24 h-3 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="w-16 h-7 bg-gray-200 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+      {/* Chart skeletons */}
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-white p-5 border border-gray-200 rounded-lg">
+          <div className="w-40 h-4 bg-gray-200 rounded animate-pulse mb-4" />
+          <div className="h-[250px] bg-gray-100 rounded animate-pulse" />
+        </div>
+      ))}
     </div>
   );
 
@@ -375,33 +376,28 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/" className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 transition-colors">
+        <Link href="/" aria-label="Back to dashboard" className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-2">
           <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: color }} />
           <h2 className="text-xl font-bold text-gray-900">{title} Overview</h2>
         </div>
-        {/* Drill-down breadcrumb chips */}
-        {selectedYear !== null && (
-          <DrillChip label={`Year: ${selectedYear}`} onClear={clearYear} />
-        )}
-        {selectedMonth !== null && (
-          <DrillChip label={`Month: ${MONTH_NAMES[selectedMonth - 1]}`} onClear={clearMonth} />
-        )}
+        {selectedYear !== null && <DrillChip label={`Year: ${selectedYear}`} onClear={clearYear} />}
+        {selectedMonth !== null && <DrillChip label={`Month: ${MONTH_NAMES[selectedMonth - 1]}`} onClear={clearMonth} />}
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Today",         value: todayTotal.toLocaleString() },
-          { label: `${cumulativeLabel} Cum.`, value: cumulativeTotal.toLocaleString() },
-          { label: "vs Last Month", value: momPct !== 'N/A' ? `${Number(momPct) >= 0 ? '+' : ''}${momPct}%` : 'N/A' },
-          { label: "vs Last Year",  value: yoyPct !== 'N/A' ? `${Number(yoyPct) >= 0 ? '+' : ''}${yoyPct}%` : 'N/A' },
+          { label: "Today",                    value: todayTotal.toLocaleString() },
+          { label: `${cumulativeLabel} Cum.`,  value: cumulativeTotal.toLocaleString() },
+          { label: "vs Last Month",            value: momPct !== 'N/A' ? `${Number(momPct) >= 0 ? '+' : ''}${momPct}%` : 'N/A' },
+          { label: "vs Last Year",             value: yoyPct !== 'N/A' ? `${Number(yoyPct) >= 0 ? '+' : ''}${yoyPct}%` : 'N/A' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 border border-gray-200 rounded-lg">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{stat.label}</p>
-            <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-xl font-bold text-gray-900 min-h-[28px]">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -410,14 +406,16 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
         {/* Today */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">Today's Performance</h3>
-          {todayData.length === 0
-            ? <p className="text-sm text-gray-400 text-center py-8">No data entered today yet</p>
-            : <div className="h-[250px]"><Bar data={todayChartData} options={commonOptions} /></div>
-          }
+          <div className="h-[250px] flex items-center justify-center">
+            {todayData.length === 0
+              ? <p className="text-sm text-gray-500 text-center">No data entered today yet</p>
+              : <Bar data={todayChartData} options={commonOptions} />
+            }
+          </div>
           <InsightBox section={section} chartType="today" defaultText="Performance is steady across shifts today." />
         </div>
 
-        {/* Cumulative — dynamic month/year */}
+        {/* Cumulative */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">
             Cumulative — {cumulativeLabel}
@@ -432,47 +430,47 @@ export function GraphPageLayout({ title, color, fieldKey, targetFieldKey }: Grap
               Showing drill-down from {selectedYear !== null ? `${selectedYear}` : ''}{selectedMonth !== null ? ` → ${MONTH_NAMES[selectedMonth - 1]}` : ''}
             </p>
           )}
-          {loadingCumulative
-            ? <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">Loading...</div>
-            : cumulativeData.length === 0
-              ? <p className="text-sm text-gray-400 text-center py-8">No data for {cumulativeLabel} yet</p>
-              : <div className="h-[250px]"><Line data={cumulativeChartData} options={commonOptions} /></div>
-          }
+          <div className="h-[250px] flex items-center justify-center">
+            {loadingCumulative
+              ? <ChartLoader />
+              : cumulativeData.length === 0
+                ? <ChartPlaceholder text={`No data for ${cumulativeLabel} yet`} />
+                : <Line data={cumulativeChartData} options={commonOptions} />
+            }
+          </div>
           <InsightBox section={section} chartType="cumulative" defaultText="Tracking cumulative progress for the month." />
         </div>
 
-        {/* MoM — clickable, filtered by selectedYear */}
+        {/* MoM */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">
             Month on Month Trend
             {selectedYear !== null && (
-              <span className="ml-2 text-xs font-normal text-blue-500 normal-case">
-                — {selectedYear}
-              </span>
+              <span className="ml-2 text-xs font-normal text-blue-500 normal-case">— {selectedYear}</span>
             )}
           </h3>
-          <p className="text-xs text-gray-400 mb-3">Click a bar to drill into that month's cumulative</p>
-          {loadingMom
-            ? <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">Loading...</div>
-            : momData.length === 0
-              ? <p className="text-sm text-gray-400 text-center py-8">No monthly data available</p>
-              : <div className="h-[250px]">
-                  <Bar data={momChartData} options={clickableBarOptions(handleMomClick)} />
-                </div>
-          }
+          <p className="text-xs text-gray-500 mb-3">Click a bar to drill into that month's cumulative</p>
+          <div className="h-[250px] flex items-center justify-center">
+            {loadingMom
+              ? <ChartLoader />
+              : momData.length === 0
+                ? <ChartPlaceholder text="No monthly data available" />
+                : <Bar data={momChartData} options={clickableBarOptions(handleMomClick)} />
+            }
+          </div>
           <InsightBox section={section} chartType="mom" defaultText="Monthly trend comparison." />
         </div>
 
-        {/* YoY — clickable */}
+        {/* YoY */}
         <div className="bg-white p-5 border border-gray-200 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wider">Year on Year Comparison</h3>
-          <p className="text-xs text-gray-400 mb-3">Click a bar to drill into that year's monthly breakdown</p>
-          {yoyData.length === 0
-            ? <p className="text-sm text-gray-400 text-center py-8">No year-on-year data available</p>
-            : <div className="h-[250px]">
-                <Bar data={yoyChartData} options={clickableBarOptions(handleYoyClick)} />
-              </div>
-          }
+          <p className="text-xs text-gray-500 mb-3">Click a bar to drill into that year's monthly breakdown</p>
+          <div className="h-[250px] flex items-center justify-center">
+            {yoyData.length === 0
+              ? <ChartPlaceholder text="No year-on-year data available" />
+              : <Bar data={yoyChartData} options={clickableBarOptions(handleYoyClick)} />
+            }
+          </div>
           <InsightBox section={section} chartType="yoy" defaultText="Year on year comparison." />
         </div>
       </div>

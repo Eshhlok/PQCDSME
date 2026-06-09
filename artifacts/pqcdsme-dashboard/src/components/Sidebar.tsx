@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, LayoutDashboard, Target, ChevronRight, Bell } from "lucide-react";
+import { X, LayoutDashboard, Target, ChevronRight, Bell, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -33,13 +33,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  // Fetch unread count for the alerts badge in sidebar
   useEffect(() => {
     if (!canSeeAlerts) return;
     api.getAlerts(PLANT_ID)
       .then((alerts: any[]) => setUnreadCount(alerts.filter(a => !a.read).length))
       .catch(() => {});
-  }, [canSeeAlerts, open]); // re-fetch when sidebar opens
+  }, [canSeeAlerts, open]);
 
   const isActive = (path: string) => location === path;
 
@@ -63,7 +62,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           boxShadow: open ? "4px 0 24px rgba(0,0,0,0.08)" : "none",
         }}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
           <span style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", letterSpacing: "-0.01em" }}>
             Navigation
@@ -72,13 +71,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             onClick={onClose}
             className="p-1 rounded hover:bg-gray-100 transition-colors"
             style={{ cursor: "pointer" }}
+            aria-label="Close sidebar"
             data-testid="button-close-sidebar"
           >
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
 
-        {/* ── Nav ── */}
+        {/* Nav */}
         <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
 
           {/* Home */}
@@ -93,7 +93,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
           {/* Sections */}
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 8, marginBottom: 6 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 8, marginBottom: 6 }}>
               Sections
             </p>
             <div className="flex flex-col gap-0.5">
@@ -119,7 +119,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           {/* Admin + Operator section */}
           {canSeeAlerts && (
             <div className="border-t border-gray-100 pt-4">
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 8, marginBottom: 6 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 8, marginBottom: 6 }}>
                 {profile?.role === "admin" ? "Admin" : "Tools"}
               </p>
 
@@ -142,22 +142,32 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 accent="#EF4444"
               />
 
-              {/* Set Targets — admin only */}
+              {/* Admin-only items */}
               {profile?.role === "admin" && (
-                <NavItem
-                  href="/targets"
-                  active={isActive("/targets")}
-                  onClick={onClose}
-                  icon={<Target className="w-4 h-4" />}
-                  label="Set Targets"
-                  accent="#BA7517"
-                />
+                <>
+                  <NavItem
+                    href="/targets"
+                    active={isActive("/targets")}
+                    onClick={onClose}
+                    icon={<Target className="w-4 h-4" />}
+                    label="Set Targets"
+                    accent="#BA7517"
+                  />
+                  <NavItem
+                    href="/report"
+                    active={isActive("/report")}
+                    onClick={onClose}
+                    icon={<FileText className="w-4 h-4" />}
+                    label="Manager Report"
+                    accent="#f97316"
+                  />
+                </>
               )}
             </div>
           )}
         </div>
 
-        {/* ── User footer ── */}
+        {/* User footer */}
         {profile && (
           <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-2.5">
             <div
@@ -170,7 +180,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <p style={{ fontSize: 13, fontWeight: 500, color: "#374151" }} className="truncate leading-tight">
                 {profile.fullName ?? "User"}
               </p>
-              <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "capitalize" }}>
+              <p style={{ fontSize: 11, color: "#6b7280", textTransform: "capitalize" }}>
                 {profile.role}
               </p>
             </div>
@@ -242,3 +252,7 @@ function NavItem({ href, active, onClick, icon, label, accent }: NavItemProps) {
     </Link>
   );
 }
+
+
+
+
