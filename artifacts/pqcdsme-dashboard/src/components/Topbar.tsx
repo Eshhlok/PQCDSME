@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Menu, LogOut, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AdminModal } from "./AdminModal";
@@ -29,6 +29,8 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [plantName, setPlantName] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevUnreadRef = useRef<number>(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (profile?.plantId) {
@@ -41,12 +43,24 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
   // Only admins and operators see alerts
   const canSeeAlerts = profile?.role === "admin" || profile?.role === "operator";
+  useEffect(() => {
+    audioRef.current = new Audio("/notification.mp3");
+    audioRef.current.volume = 0.5;
+  }, []);
 
   const fetchUnread = useCallback(async () => {
     if (!canSeeAlerts) return;
     try {
       const alerts = await api.getAlerts(PLANT_ID);
-      setUnreadCount(alerts.filter((a: any) => !a.read).length);
+      const newCount = alerts.filter((a: any) => !a.read).length;
+      setUnreadCount(newCount);
+        // Play sound only if unread count increased
+      if (newCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+        audioRef.current?.play().catch(() => {}); // catch blocks autoplay policy errors
+      }
+
+      prevUnreadRef.current = newCount;
+      setUnreadCount(newCount);
     } catch {
       // silently fail — alerts are non-critical
     }
