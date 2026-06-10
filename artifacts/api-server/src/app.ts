@@ -5,7 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
-
+app.get("/api/healthz", (_req, res) => res.json({ status: "ok" }));
 app.use(
   pinoHttp({
     logger,
