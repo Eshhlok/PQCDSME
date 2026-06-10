@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    ".": "./dist/index.js",
+    "./schema": "./dist/schema/index.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     
+    "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10"
   }
