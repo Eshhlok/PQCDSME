@@ -1,0 +1,45 @@
+## Vercel Web Analytics Implementation
+
+Successfully implemented Vercel Web Analytics for the PQCDSME Dashboard project.
+
+### Changes Made
+
+#### 1. Package Installation
+- Added `@vercel/analytics` (v2.0.1) to project dependencies
+- Updated `package.json` to include the new dependency
+
+#### 2. Analytics Integration
+- Modified `src/main.tsx` to inject Vercel Analytics tracking
+- Added import: `import { inject } from '@vercel/analytics';`
+- Called `inject()` before rendering the React app
+
+### Implementation Details
+
+This project uses **Vite + React**, so I followed the Vite-specific instructions from the official Vercel documentation:
+- Fetched latest installation guide from https://vercel.com/docs/analytics/quickstart
+- Used the `inject()` method in `main.tsx` as recommended for Vite projects
+- This is different from React apps (which use `<Analytics />` component) or Next.js apps (which have framework-specific imports)
+
+### Files Modified
+- `artifacts/pqcdsme-dashboard/package.json` - Added @vercel/analytics dependency
+- `artifacts/pqcdsme-dashboard/src/main.tsx` - Added analytics injection
+- `pnpm-lock.yaml` - Updated lock file with new dependencies
+
+### Verification Steps Completed
+✅ Package installed successfully with pnpm
+✅ Build completed without errors (`pnpm run build`)
+✅ TypeScript typecheck passed with no errors (`pnpm run typecheck`)
+✅ Lock file updated to ensure consistent dependencies
+
+### Next Steps for Deployment
+To enable analytics tracking in production:
+1. Deploy the application to Vercel
+2. Enable Web Analytics in the Vercel dashboard (Analytics section)
+3. Verify tracking by checking the browser Network tab for analytics requests
+4. View analytics data in the Vercel dashboard after users visit the site
+
+### Notes
+- Analytics tracking will automatically start once the app is deployed to Vercel
+- The `inject()` function loads the analytics script asynchronously
+- No additional configuration is required for basic page view tracking
+- Data will be available in the Vercel dashboard after deployment
