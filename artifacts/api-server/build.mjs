@@ -104,7 +104,24 @@ async function buildAll() {
     sourcemap: "linked",
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
-      esbuildPluginPino({ transports: ["pino-pretty"] })
+      esbuildPluginPino({ transports: ["pino-pretty"] }),
+      {
+        name: "workspace-resolver",
+        setup(build) {
+          build.onResolve({ filter: /^@workspace\// }, (args) => {
+            if (args.path === "@workspace/db") {
+              return { path: path.resolve(artifactDir, "../../lib/db/src/index.ts") };
+            }
+            if (args.path === "@workspace/db/schema") {
+              return { path: path.resolve(artifactDir, "../../lib/db/src/schema/index.ts") };
+            }
+            if (args.path === "@workspace/api-zod") {
+              return { path: path.resolve(artifactDir, "../../lib/api-zod/src/index.ts") };
+            }
+          });
+        },
+      },
+      
     ],
     // Make sure packages that are cjs only (e.g. express) but are bundled continue to work in our esm output file
     banner: {
